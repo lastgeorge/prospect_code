@@ -30,6 +30,9 @@ namespace Prospect {
     int min_SegNo;
     int max_SegNo;
 
+    bool is_dead_seg(int segNo);
+    bool is_veto_seg(int segNo);
+    
     std::set<int> dead_segs;
     std::set<int> veto_segs;
   };

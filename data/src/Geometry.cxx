@@ -12,6 +12,40 @@ Geometry::Geometry()
 
   min_SegNo = 0;
   max_SegNo = 153;
+
+  int dead_set_nos[33]={0,1,2,3,4,5,6,9,10,11,
+		      12,13,18,21,23,24,27,32,34,40,
+		      44,52,68,73,79,86,102,107,115,122,
+		      127,130,139
+  };
+  for (int i=0;i!=33;i++){
+    dead_segs.insert(dead_set_nos[i]);
+  }
+  int veto_set_nos[46]={0, 1, 2, 3,4,5,6,7,8,9,10,
+		      11 ,12,13,27,41,55,69,83,97,111,
+		      125,139,153,152,151,150,149,148,147,146,
+		      145,144,143,142,141,140,126,112,96,84,
+		      70,56,42,28,14
+  };
+  for (int i=0;i!=46;i++){
+    veto_segs.insert(veto_set_nos[i]);
+  }
+}
+
+bool Geometry::is_dead_seg(int segNo){
+  if (dead_segs.find(segNo)==dead_segs.end()){
+    return false;
+  }else{
+    return true;
+  }
+}
+
+bool Geometry::is_veto_seg(int segNo){
+  if (veto_segs.find(segNo)==veto_segs.end()){
+    return false;
+  }else{
+    return true;
+  }
 }
 
 int Geometry::SegRow(int segNo)
