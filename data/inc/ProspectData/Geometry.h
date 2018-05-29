@@ -1,6 +1,8 @@
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
 
+#include "ProspectData/Units.h"
+
 #include <set>
 
 namespace Prospect {

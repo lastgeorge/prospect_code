@@ -6,9 +6,9 @@ using namespace Prospect;
 
 Geometry::Geometry()
 {
-    WIDTH_X = 0.1461; // m
-    WIDTH_Y = 0.1461; // m
-    WIDTH_Z = 1.175; // m
+  WIDTH_X = 0.1461*units::m; // m
+  WIDTH_Y = 0.1461*units::m; // m
+  WIDTH_Z = 1.175*units::m; // m
 
     min_SegNo = 0;
     max_SegNo = 153;
@@ -105,6 +105,11 @@ int Geometry::RowColDiff(int segNo1, int segNo2){
   int nRow_2 = SegRow(segNo2);
   int nCol_2 = SegCol(segNo2);
 
+  // 0 same ... 
+  // 1 adj ...
+  // 2 corner ...
+  // -1 not connected ... 
+  
   int result = -1;
   if (std::fabs(nRow_1-nRow_2)<=1)
     result += fabs(nRow_1-nRow_2);
