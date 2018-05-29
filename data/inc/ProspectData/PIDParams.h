@@ -1,3 +1,5 @@
+#include <vector>
+
 namespace Prospect{
   class PIDParams {
     // high energy muon ...
@@ -30,7 +32,29 @@ namespace Prospect{
     PIDParams();
     ~PIDParams();
     
-    
+    std::pair<double,double> get_he_muon_E();
+    std::pair<double,double> get_he_muon_PSD();
+    double get_he_muon_veto_time(){return he_muon_veto_time;};
+    std::pair<double,double> get_he_neutron_E();
+    std::pair<double,double> get_he_neutron_PSD();
+    double get_he_neutron_veto_time(){return he_neutron_veto_time;};
+    std::pair<double,double> get_prompt_E();
+    std::pair<double,double> get_prompt_PSD();
+    std::pair<double,double> get_delay_E();
+    std::pair<double,double> get_delay_PSD();
+    std::pair<double,double> get_delta_t_pd();
+
+    void set_he_muon_E(double val1, double val2);
+    void set_he_muon_PSD(double val1, double val2);
+    void set_he_muon_veto_time(double val){he_muon_veto_time=val;};
+    void set_he_neutron_E(double val1, double val2);
+    void set_he_neutron_PSD(double val1, double val2);
+    void set_he_neutron_veto_time(double val){he_neutron_veto_time=val;};
+    void set_prompt_E(double val1, double val2);
+    void set_prompt_PSD(double val1, double val2);
+    void set_delay_E(double val1, double val2);
+    void set_delay_PSD(double val1, double val2);
+    void set_delta_t_pd(double val1, double val2);
     
   };
 }
