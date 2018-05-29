@@ -10,8 +10,8 @@ Geometry::Geometry()
   WIDTH_Y = 0.1461*units::m; // m
   WIDTH_Z = 1.175*units::m; // m
 
-    min_SegNo = 0;
-    max_SegNo = 153;
+  min_SegNo = 0;
+  max_SegNo = 153;
 }
 
 int Geometry::SegRow(int segNo)
