@@ -1,5 +1,7 @@
 #include "ProspectData/Bundle.h"
-
+#include "ProspectData/Singleton.h"
+#include "ProspectData/PIDParams.h"
+#include "ProspectData/Geometry.h"
 
 #include <iostream>
 
@@ -22,7 +24,7 @@ Bundle::Bundle(long long evt,float E_total,float wPSD,double t0,int ts_runstart,
   , vZ(vZ)
   , vPSD(vPSD)
 {
-  
+  particle_type = -1;
 }
 
 Bundle::~Bundle(){
@@ -47,3 +49,28 @@ void Bundle::Print(){
   
 }
 
+void Bundle::PID(){
+  PIDParams& pid_cuts = Singleton<PIDParams>::Instance();
+  Geometry& geometry = Singleton<Geometry>::Instance();
+
+  if (geometry.is_dead_seg(mSeg) || geometry.is_veto_seg(mSeg))
+    return;
+  
+  std::pair<double,double> n_PSD = pid_cuts.get_neutron_PSD(E_total);
+  std::pair<double,double> g_PSD = pid_cuts.get_gamma_PSD(E_total);
+  std::pair<double,double> he_n_E = pid_cuts.get_he_neutron_E();
+  std::pair<double,double> he_m_E = pid_cuts.get_he_muon_E(); 
+  std::pair<double,double> IBD_p_E = pid_cuts.get_prompt_E(); 
+  std::pair<double,double> IBD_d_E = pid_cuts.get_delay_E();
+    
+  if (E_total > he_n_E.first && E_total < he_n_E.second && wPSD > n_PSD.first && wPSD < n_PSD.second){
+    particle_type = 4; // neutron
+  }else if (E_total > he_m_E.first && E_total < he_m_E.second ){
+    particle_type = 3; // muon
+  } else if (E_total > IBD_p_E.first && E_total < IBD_p_E.second && wPSD > g_PSD.first && wPSD < g_PSD.second){
+    particle_type = 1;
+  } else if (E_total > IBD_d_E.first && E_total < IBD_d_E.second && wPSD > n_PSD.first && wPSD < n_PSD.second){
+    particle_type = 2;
+  }
+  
+}

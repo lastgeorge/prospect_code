@@ -11,6 +11,11 @@ namespace Prospect {
     ~Bundle();
 
     void Print();
+
+    void PID();
+
+    int get_particle_type() {return particle_type;};
+    int get_t0(){return t0;};
     
   protected:
     long long evt;
@@ -28,6 +33,9 @@ namespace Prospect {
     std::vector<float> vE;
     std::vector<float> vZ;
     std::vector<float> vPSD;
+
+    int particle_type;
+    
   };
 }
 

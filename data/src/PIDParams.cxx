@@ -11,7 +11,7 @@ PIDParams::PIDParams(){
   he_muon_veto_time = 100*units::microsecond;
 
   // neutron veto energy
-  he_neutron_E[0] = 1*units::MeV; // place holder ... 
+  he_neutron_E[0] = 15*units::MeV; // place holder ... 
   he_neutron_E[1] = 1e9;
   
   // neutron veto time
@@ -30,8 +30,8 @@ PIDParams::PIDParams(){
   delta_t_pd[0] = 1*units::microsecond;
   delta_t_pd[1] = 120*units::microsecond;
 
-  fid_cut_z[0]=-89.6*units::cm;
-  fid_cut_z[1]=89.6*units::cm;
+  fid_cut_z[0]=-44.8*units::cm;
+  fid_cut_z[1]=44.8*units::cm;
 
   delta_z[0] = 18*units::cm; // same 
   delta_z[1] = 14*units::cm; // adjacent
