@@ -15,9 +15,11 @@ namespace Prospect {
     void PID();
 
     int get_particle_type() {return particle_type;};
-    int get_t0(){return t0;};
+    double get_t0(){return t0;};
+    long long get_evt(){return evt;};
     
   protected:
+
     long long evt;
     float E_total;
     float wPSD;
@@ -29,6 +31,7 @@ namespace Prospect {
     float mY;
     float mZ;
     float mPSD;
+    
     std::vector<int> vSeg;
     std::vector<float> vE;
     std::vector<float> vZ;

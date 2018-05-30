@@ -4,23 +4,18 @@ using namespace Prospect;
 
 PIDParams::PIDParams(){
   // muon veto energy
-  he_muon_E[0] = 15*units::MeV;
-  he_muon_E[1] = 1e9;
-
+  muon_tot_E_llimit = 15*units::MeV;
   // muon veto time
-  he_muon_veto_time = 100*units::microsecond;
+  muon_veto_time = 100*units::microsecond;
 
   // neutron veto energy
-  he_neutron_E[0] = 15*units::MeV; // place holder ... 
-  he_neutron_E[1] = 1e9;
-  
-  // neutron veto time
-  he_neutron_veto_time = 200*units::microsecond;
-
+  neutron_E_llimit = 0.25*units::MeV; 
+  // neutron veto time  +- 100 us
+  neutron_mult_veto_time = 100*units::microsecond;
+    
   // prompt energy
-  prompt_E[0] = 0.1 *units::MeV;
+  prompt_E[0] = 0.25 *units::MeV;
   prompt_E[1] = 10 * units::MeV;
-  
   
   // delay energy
   delay_E[0] = 0.48*units::MeV;
@@ -86,23 +81,21 @@ std::pair<double,double> PIDParams::get_gamma_PSD(double E){
 }
 
 
-void PIDParams::set_he_muon_E(double val1, double val2){
-  he_muon_E[0] = val1;
-  he_muon_E[1] = val2;
+void PIDParams::set_muon_tot_E_llimit(double val){
+  muon_tot_E_llimit = val;
 }
 
-std::pair<double,double> PIDParams::get_he_muon_E(){
-  return std::make_pair(he_muon_E[0],he_muon_E[1]);
+double PIDParams::get_muon_tot_E_llimit(){
+  return muon_tot_E_llimit;
 }
 
 
-void PIDParams::set_he_neutron_E(double val1, double val2){
-  he_neutron_E[0] = val1;
-  he_neutron_E[1] = val2;
+void PIDParams::set_neutron_E_llimit(double val){
+  neutron_E_llimit = val;
 }
 
-std::pair<double,double> PIDParams::get_he_neutron_E(){
-  return std::make_pair(he_neutron_E[0],he_neutron_E[1]);
+double PIDParams::get_neutron_E_llimit(){
+  return neutron_E_llimit;
 }
 
 

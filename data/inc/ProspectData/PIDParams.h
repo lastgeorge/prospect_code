@@ -6,25 +6,19 @@
 
 namespace Prospect{
   class PIDParams {
-    // high energy muon ...
-
-    double he_muon_E[2]; // low and high range
-   
-    
+    // high energy muon low limit
+    double muon_tot_E_llimit; // low and high range
     // veto ...
-    double he_muon_veto_time;
+    double muon_veto_time;
     
     // high energy neutron ... 
-    double he_neutron_E[2];
-    
-    
+    double neutron_E_llimit;
     // veto ...
-    double he_neutron_veto_time;
+    double neutron_mult_veto_time;
+
     
     // prompt signal
     double prompt_E[2];
-    
-
     // delay signal
     double delay_E[2];
    
@@ -46,32 +40,30 @@ namespace Prospect{
     PIDParams();
     ~PIDParams();
     
-    std::pair<double,double> get_he_muon_E();
+    double get_muon_tot_E_llimit();
+    void set_muon_tot_E_llimit(double val);
     
-    double get_he_muon_veto_time(){return he_muon_veto_time;};
-    std::pair<double,double> get_he_neutron_E();
+    double get_muon_veto_time(){return muon_veto_time;};
+    void set_muon_veto_time(double val){muon_veto_time=val;};
     
-    double get_he_neutron_veto_time(){return he_neutron_veto_time;};
-    std::pair<double,double> get_prompt_E();
-   
-    std::pair<double,double> get_delay_E();
+    double get_neutron_E_llimit();
+    void set_neutron_E_llimit(double val);
     
-    std::pair<double,double> get_delta_t_pd();
+    double get_neutron_mult_veto_time(){return neutron_mult_veto_time;};
+    void set_neutron_mult_veto_time(double val){neutron_mult_veto_time=val;};
 
-    void set_he_muon_E(double val1, double val2);
+
     
-    void set_he_muon_veto_time(double val){he_muon_veto_time=val;};
-    void set_he_neutron_E(double val1, double val2);
-    
-    void set_he_neutron_veto_time(double val){he_neutron_veto_time=val;};
+    std::pair<double,double> get_prompt_E();
+    std::pair<double,double> get_delay_E();
+    std::pair<double,double> get_delta_t_pd();
     void set_prompt_E(double val1, double val2);
-    
     void set_delay_E(double val1, double val2);
-    
     void set_delta_t_pd(double val1, double val2);
 
     std::pair<double,double> get_fid_z_cut(){return std::make_pair(fid_cut_z[0],fid_cut_z[1]);};
     double get_delta_z_cut(int flag);
+    
 
     std::pair<double,double> get_neutron_PSD(double E);
     std::pair<double,double> get_gamma_PSD(double E);
