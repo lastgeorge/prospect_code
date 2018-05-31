@@ -19,8 +19,8 @@ PIDParams::PIDParams(){
   nn_veto_time = 180*units::microsecond;
   
   // prompt energy
-  prompt_E[0] = 0.7 *units::MeV;
-  prompt_E[1] = 10 * units::MeV;
+  prompt_E[0] = 0.25 *units::MeV;
+  prompt_E[1] = 15 * units::MeV;
   
   // delay energy
   delay_E[0] = 0.48*units::MeV;
@@ -38,20 +38,46 @@ PIDParams::PIDParams(){
   delta_z[2] = 5*units::cm; // corner
   
   // neutrono PSD ...
-  Double_t E_n[2]={0.01*units::MeV, 1e9*units::MeV};
-  Double_t PSD_n_low[2]={0.21,0.21}; // PID
-  Double_t PSD_n_high[2]={0.33,0.33};
+  Double_t E_n[22]={0.25*units::MeV, 0.4*units::MeV, 0.6136364*units::MeV, 0.8863636*units::MeV, 1.1136364*units::MeV,
+		    1.7045455*units::MeV, 2.2727273*units::MeV, 3.0681818*units::MeV, 3.7272727*units::MeV , 4.3636365*units::MeV,
+		    5.068182*units::MeV, 5.8863635*units::MeV , 6.818182*units::MeV , 7.909091*units::MeV , 9.068182*units::MeV ,
+		    10.090909*units::MeV, 11.181818*units::MeV, 12.431818*units::MeV, 13.204545*units::MeV, 14.204545*units::MeV,
+		    14.863636*units::MeV, 15*units::MeV};
+  Double_t PSD_n_low[22]={0.21,0.21,0.21023256,0.20179704,0.1938055,
+			  0.18581395, 0.18270613, 0.18004228, 0.17693447, 0.17560254,
+			  0.17293869, 0.17116278, 0.1693869, 0.1658351, 0.16361523,
+			  0.1622833, 0.1605074, 0.1587315, 0.15828753, 0.1569556,
+			  0.15651163, 0.15651163};
 
-  gPSD_neutron_low = new TGraph(2,E_n,PSD_n_low);
-  gPSD_neutron_high = new TGraph(2,E_n,PSD_n_high);
+    
+  Double_t PSD_n_high[22]={0.33,0.33,0.33,0.33,0.33,
+			   0.33,0.33,0.33,0.33,0.33,
+			   0.33,0.33,0.33,0.33,0.33,
+			   0.33,0.33,0.33,0.33,0.33,
+			   0.33,0.33};
+
+  gPSD_neutron_low = new TGraph(22,E_n,PSD_n_low);
+  gPSD_neutron_high = new TGraph(22,E_n,PSD_n_high);
   
   // gamma PSD ...
-  Double_t E_g[2]={0.01*units::MeV, 1e9*units::MeV};
-  Double_t PSD_g_low[2]={-0.01,-0.01};
-  Double_t PSD_g_high[2]={0.21,0.21}; // gamma ...
+  Double_t E_g[22]={0.25*units::MeV, 0.4*units::MeV, 0.6136364*units::MeV, 0.8863636*units::MeV, 1.1136364*units::MeV,
+		    1.7045455*units::MeV, 2.2727273*units::MeV, 3.0681818*units::MeV, 3.7272727*units::MeV , 4.3636365*units::MeV,
+		    5.068182*units::MeV, 5.8863635*units::MeV , 6.818182*units::MeV , 7.909091*units::MeV , 9.068182*units::MeV ,
+		    10.090909*units::MeV, 11.181818*units::MeV, 12.431818*units::MeV, 13.204545*units::MeV, 14.204545*units::MeV,
+		    14.863636*units::MeV, 15*units::MeV};
+  Double_t PSD_g_low[22]={-0.01,-0.01,-0.01,-0.01,-0.01,
+			  -0.01,-0.01,-0.01,-0.01,-0.01,
+			  -0.01,-0.01,-0.01,-0.01,-0.01,
+			  -0.01,-0.01,-0.01,-0.01,-0.01,
+			  -0.01,0.01};
+  Double_t PSD_g_high[22]={0.21,0.21,0.21023256,0.20179704,0.1938055,
+			  0.18581395, 0.18270613, 0.18004228, 0.17693447, 0.17560254,
+			  0.17293869, 0.17116278, 0.1693869, 0.1658351, 0.16361523,
+			  0.1622833, 0.1605074, 0.1587315, 0.15828753, 0.1569556,
+			  0.15651163, 0.15651163}; // gamma ...
 
-  gPSD_gamma_low = new TGraph(2,E_g,PSD_g_low);
-  gPSD_gamma_high = new TGraph(2,E_g, PSD_g_high);
+  gPSD_gamma_low = new TGraph(22,E_g,PSD_g_low);
+  gPSD_gamma_high = new TGraph(22,E_g, PSD_g_high);
 }
 
 PIDParams::~PIDParams(){

@@ -257,13 +257,15 @@ int main(int argc, char* argv[])
 	      // break;
 	    }
 	  }
-	  if (temp_IBDs.size()==1 ){
+	  
+	  //if (temp_IBDs.size()==1 ){
+	  if (temp_IBDs.size()>0 ){
 	    bool flag_save = true;
 
-	    if (delay_list.size()>0){
-	      if ((bundle->get_t0() - delay_list.back()->get_t0()) < pid_cuts.get_nn_veto_time())
-		flag_save = false;
-	    }
+	    //	    if (delay_list.size()>0){
+	    //  if ((bundle->get_t0() - delay_list.back()->get_t0()) < pid_cuts.get_nn_veto_time())
+	    //	flag_save = false;
+	    // }
 	    
 	    if (flag_save){
 	      Bundle *prompt = new Bundle(temp_IBDs.front().first);
@@ -280,21 +282,21 @@ int main(int argc, char* argv[])
       if (bundle->is_delay_cand()){
 	if (bundle->get_t0() > veto_times.back().second){
 
-	  if (IBD_list.size()>0)
-	    if (IBD_list.back().second->get_t0()!=bundle->get_t0() &&
-		bundle->get_t0() - IBD_list.back().second->get_t0()<  pid_cuts.get_nn_veto_time()){
-	      std::vector<std::list<std::pair<Bundle*,Bundle*> >::iterator> to_be_removed;
-	      // check IBDs ahead of them ... 
-	      for (auto it=IBD_list.begin(); it!= IBD_list.end(); it++){
-		if ( it->second->get_t0()!=bundle->get_t0() &&
-		   bundle->get_t0() - it->second->get_t0() <  pid_cuts.get_nn_veto_time())
-		  to_be_removed.push_back(it);
-	      }
-	      if (to_be_removed.size()>0){
-		IBD_list.erase(to_be_removed.front(),to_be_removed.back());
-		IBD_list.erase(to_be_removed.back());
-	      }
-	    }
+	  // if (IBD_list.size()>0)
+	  //   if (IBD_list.back().second->get_t0()!=bundle->get_t0() &&
+	  // 	bundle->get_t0() - IBD_list.back().second->get_t0()<  pid_cuts.get_nn_veto_time()){
+	  //     std::vector<std::list<std::pair<Bundle*,Bundle*> >::iterator> to_be_removed;
+	  //     // check IBDs ahead of them ... 
+	  //     for (auto it=IBD_list.begin(); it!= IBD_list.end(); it++){
+	  // 	if ( it->second->get_t0()!=bundle->get_t0() &&
+	  // 	   bundle->get_t0() - it->second->get_t0() <  pid_cuts.get_nn_veto_time())
+	  // 	  to_be_removed.push_back(it);
+	  //     }
+	  //     if (to_be_removed.size()>0){
+	  // 	IBD_list.erase(to_be_removed.front(),to_be_removed.back());
+	  // 	IBD_list.erase(to_be_removed.back());
+	  //     }
+	  //   }
 	  
 	  delay_list.push_back(bundle);
 	  prev_delay_time = bundle->get_t0();

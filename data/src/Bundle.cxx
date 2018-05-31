@@ -125,19 +125,19 @@ void Bundle::PID(){
   }
   
   for (size_t i=0;i!=vE.size();i++){
-    if (vE.at(i)>neutron_E_llimit && vPSD.at(i) > n_PSD.first && vPSD.at(i) < n_PSD.second){
+    if (vE.at(i)>neutron_E_llimit && vPSD.at(i) > n_PSD.first){
       flag_showern = true;
       break;
     }
   }
 
   
-  
   if (!flag_muon){
     flag_prompt_cand = true;
     
     for (size_t i=0;i!=vE.size();i++){
-      if (geometry.is_dead_seg(vSeg.at(i)) || geometry.is_veto_seg(vSeg.at(i)) || vE.at(i) <0.01*units::MeV
+      if (geometry.is_dead_seg(vSeg.at(i)) || geometry.is_veto_seg(vSeg.at(i))
+	  || vE.at(i) <0.01*units::MeV
 	  || vSeg.at(i)<geometry.min_SegNo || vSeg.at(i)>geometry.max_SegNo
 	  || vZ.at(i) < fid_z_cut.first || vZ.at(i) > fid_z_cut.second)
 	continue;
@@ -151,7 +151,7 @@ void Bundle::PID(){
 	delay_seg_PSD = vPSD.at(i);
 	delay_seg_Z = vZ.at(i);
 	
-      }else if (vE.at(i)>0.1*units::MeV && vPSD.at(i) > g_PSD.first && vPSD.at(i) < g_PSD.second ){
+      }else if (vE.at(i)>0.25*units::MeV && vPSD.at(i) > g_PSD.first && vPSD.at(i) < g_PSD.second ){
 	if (vE.at(i) > prompt_maxseg_E){
 	  prompt_maxseg_E = vE.at(i);
 	  prompt_maxseg_no = vSeg.at(i);
@@ -161,11 +161,9 @@ void Bundle::PID(){
       }else{
 	flag_prompt_cand = false;
       }
-
       
       delay_total_E += vE.at(i);
       prompt_total_E += vE.at(i);
-      
     }
     
     if (prompt_total_E < IBD_p_E.first || prompt_total_E > IBD_p_E.second )
