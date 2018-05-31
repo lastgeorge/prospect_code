@@ -15,9 +15,11 @@ PIDParams::PIDParams(){
   neutron_E_llimit = 0.25*units::MeV; 
   // neutron veto time  +- 100 us
   neutron_mult_veto_time = 180*units::microsecond;
+
+  nn_veto_time = 180*units::microsecond;
   
   // prompt energy
-  prompt_E[0] = 0.25 *units::MeV;
+  prompt_E[0] = 0.7 *units::MeV;
   prompt_E[1] = 10 * units::MeV;
   
   // delay energy

@@ -18,6 +18,7 @@ namespace Prospect{
     // veto ...
     double neutron_mult_veto_time;
 
+    double nn_veto_time;
     
     // prompt signal
     double prompt_E[2];
@@ -53,14 +54,15 @@ namespace Prospect{
 
     double get_muon_upstream_veto_time(){return muon_upstream_veto_time;};
     void set_muon_upstream_veto_time(double val){muon_upstream_veto_time=val;};
-    
+
     double get_neutron_E_llimit();
     void set_neutron_E_llimit(double val);
     
     double get_neutron_mult_veto_time(){return neutron_mult_veto_time;};
     void set_neutron_mult_veto_time(double val){neutron_mult_veto_time=val;};
 
-
+    double get_nn_veto_time(){return nn_veto_time;};
+    void set_nn_veto_time(double val){nn_veto_time = val;};
     
     std::pair<double,double> get_prompt_E();
     std::pair<double,double> get_delay_E();

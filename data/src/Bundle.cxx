@@ -45,6 +45,40 @@ Bundle::Bundle(long long evt,float E_total,float wPSD,double t0,int ts_runstart,
   }
 }
 
+Bundle::Bundle(Bundle* bundle)
+  : evt(bundle->evt)
+  , E_total(bundle->E_total)
+  , wPSD(bundle->wPSD)
+  , t0(bundle->t0)
+  , ts_runstart(bundle->ts_runstart)
+  , mE(bundle->mE)
+  , mSeg(bundle->mSeg)
+  , mX(bundle->mX)
+  , mY(bundle->mY)
+  , mZ(bundle->mZ)
+  , mPSD(bundle->mPSD)
+  , vSeg(bundle->vSeg)
+  , vE(bundle->vE)
+  , vZ(bundle->vZ)
+  , vPSD(bundle->vPSD)
+  , flag_muon(bundle->flag_muon)
+  , flag_showern(bundle->flag_showern)
+  , flag_delay_cand(bundle->flag_delay_cand)
+  , flag_prompt_cand(bundle->flag_prompt_cand)
+  , delay_seg_E(bundle->delay_seg_E)
+  , delay_seg_no(bundle->delay_seg_no)
+  , delay_seg_PSD(bundle->delay_seg_PSD)
+  , delay_seg_Z(bundle->delay_seg_Z)
+  , delay_total_E(bundle->delay_total_E)
+  , prompt_maxseg_E (bundle->prompt_maxseg_E)
+  , prompt_maxseg_no (bundle->prompt_maxseg_no)
+  , prompt_maxseg_PSD (bundle->prompt_maxseg_PSD)
+  , prompt_maxseg_Z (bundle->prompt_maxseg_Z)
+  , prompt_total_E (bundle->prompt_total_E)
+{
+}
+
+
 Bundle::~Bundle(){
 }
 

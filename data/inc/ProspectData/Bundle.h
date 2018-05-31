@@ -8,6 +8,7 @@ namespace Prospect {
   class Bundle{
   public:
     Bundle(long long evt,float E_total,float wPSD,double t0,int ts_runstart,float mE,int mSeg,float mX,float mY,float mZ,float mPSD,std::vector<int>& vSeg, std::vector<float>& vE, std::vector<float>& vZ, std::vector<float>& vPSD);
+    Bundle(Bundle *bundle);
     ~Bundle();
 
     void Print();
@@ -34,9 +35,6 @@ namespace Prospect {
     double get_prompt_total_E(){ return prompt_total_E;};
 
     
-    
-  protected:
-
     long long evt;
     float E_total;
     float wPSD;

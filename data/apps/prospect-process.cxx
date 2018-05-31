@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <list>
+#include <set>
 
 #include "TFile.h"
 #include "TString.h"
@@ -150,6 +151,10 @@ int main(int argc, char* argv[])
     double prev_delay_time = -1;
     
     std::list<Bundle*> prompt_list; // save all the prompt
+
+    std::list<Bundle*> delay_list;
+    std::list<std::pair<Bundle*, Bundle*>> IBD_list;
+    std::set<Bundle*> saved_bundles;
     
     for (int i=0;i!=T->GetEntries();i++){
       if (i%1000000==0) std::cout << "Events: " << i/1000000 << " M" << std::endl;
@@ -216,25 +221,9 @@ int main(int argc, char* argv[])
 
       
 
-      if (bundle->is_delay_cand()){
-	delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
-	delay_seg_no = bundle->get_delay_seg_no();
-	delay_seg_PSD = bundle->get_delay_seg_PSD();
-	delay_total_E = bundle->get_delay_total_E()/units::MeV;
-	time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
-	time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
-	time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
-	
-	if (bundle->get_t0() > veto_times.back().second){
-	  T_delay->Fill();
-	  prev_delay_time = bundle->get_t0();
-	}
-      }
-      
-      
-      
-
       bool flag_save_bundle = false;
+      
+      
       
       if (bundle->is_prompt_cand()){
 	prompt_list.push_back(bundle);
@@ -258,37 +247,64 @@ int main(int argc, char* argv[])
 	    prompt_list.erase(to_be_removed.back());
 	  }
 
+	  int n_mult = 0;
+	  std::vector<std::pair<Bundle*,Bundle*> > temp_IBDs;
 	  for (auto it = prompt_list.begin(); it!=prompt_list.end(); it++){
 	    if (checkIBD(std::make_pair(*it,bundle))  ){
-	      prompt_maxseg_E = (*it)->get_prompt_maxseg_E()/units::MeV;
-	      prompt_maxseg_no = (*it)->get_prompt_maxseg_no();
-	      prompt_maxseg_PSD = (*it)->get_prompt_maxseg_PSD();
-	      prompt_maxseg_Z = (*it)->get_prompt_maxseg_Z()/units::cm;
-	      prompt_total_E = (*it)->get_prompt_total_E()/units::MeV;
-
-	      delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
-	      delay_seg_no = bundle->get_delay_seg_no();
-	      delay_seg_PSD = bundle->get_delay_seg_PSD();
-	      delay_seg_Z = bundle->get_delay_seg_Z()/units::cm;
-	      delay_total_E = bundle->get_delay_total_E()/units::MeV;
-
-	      flag_geometry = geometry.RowColDiff((*it)->get_prompt_maxseg_no(), bundle->get_delay_seg_no());
-	      delta_t = bundle->get_t0() - (*it)->get_t0();
-
-	      if (bundle->get_t0()-prev_showern_time > 250*units::microsecond)
-		T_IBD->Fill();
-	      
-	      break;
+	      temp_IBDs.push_back(std::make_pair(*it,bundle));
+	      // if (bundle->get_t0()-prev_showern_time > 250*units::microsecond)
+	      // T_IBD->Fill();
+	      // break;
 	    }
 	  }
+	  if (temp_IBDs.size()==1 ){
+	    bool flag_save = true;
+
+	    if (delay_list.size()>0){
+	      if ((bundle->get_t0() - delay_list.back()->get_t0()) < pid_cuts.get_nn_veto_time())
+		flag_save = false;
+	    }
+	    
+	    if (flag_save){
+	      Bundle *prompt = new Bundle(temp_IBDs.front().first);
+	      IBD_list.push_back(std::make_pair(prompt,temp_IBDs.front().second));
+	      flag_save_bundle = true;
+	    }
+	  }
+	  //  std::cout << temp_IBDs.size() << std::endl;
 	  
 	  
 	}
       }
+      
+      if (bundle->is_delay_cand()){
+	if (bundle->get_t0() > veto_times.back().second){
 
+	  if (IBD_list.size()>0)
+	    if (IBD_list.back().second->get_t0()!=bundle->get_t0() &&
+		bundle->get_t0() - IBD_list.back().second->get_t0()<  pid_cuts.get_nn_veto_time()){
+	      std::vector<std::list<std::pair<Bundle*,Bundle*> >::iterator> to_be_removed;
+	      // check IBDs ahead of them ... 
+	      for (auto it=IBD_list.begin(); it!= IBD_list.end(); it++){
+		if ( it->second->get_t0()!=bundle->get_t0() &&
+		   bundle->get_t0() - it->second->get_t0() <  pid_cuts.get_nn_veto_time())
+		  to_be_removed.push_back(it);
+	      }
+	      if (to_be_removed.size()>0){
+		IBD_list.erase(to_be_removed.front(),to_be_removed.back());
+		IBD_list.erase(to_be_removed.back());
+	      }
+	    }
+	  
+	  delay_list.push_back(bundle);
+	  prev_delay_time = bundle->get_t0();
+	  flag_save_bundle = true;
+	}
+      }
+      
       if (bundle->is_showern()&& (!(bundle->is_muon())) && (!bundle->is_delay_cand()))
 	prev_showern_time = bundle->get_t0();
-
+      
       if (!flag_save_bundle)
 	delete bundle;
       
@@ -304,6 +320,39 @@ int main(int argc, char* argv[])
     std::cout << showern_count << " " << showern_muon_count << std::endl;
     
 
+    for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
+      Bundle *bundle = *it;
+      delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
+      delay_seg_no = bundle->get_delay_seg_no();
+      delay_seg_PSD = bundle->get_delay_seg_PSD();
+      delay_total_E = bundle->get_delay_total_E()/units::MeV;
+      time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
+      time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
+      time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
+      T_delay->Fill();
+    }
+
+    for (auto it = IBD_list.begin(); it!=IBD_list.end(); it++){
+      Bundle* bundle1 = it->first;
+      Bundle* bundle2 = it->second;
+      
+      prompt_maxseg_E = bundle1->get_prompt_maxseg_E()/units::MeV;
+      prompt_maxseg_no = bundle1->get_prompt_maxseg_no();
+      prompt_maxseg_PSD = bundle1->get_prompt_maxseg_PSD();
+      prompt_maxseg_Z = bundle1->get_prompt_maxseg_Z()/units::cm;
+      prompt_total_E = bundle1->get_prompt_total_E()/units::MeV;
+      
+      delay_seg_E = bundle2->get_delay_seg_E()/units::MeV;
+      delay_seg_no = bundle2->get_delay_seg_no();
+      delay_seg_PSD = bundle2->get_delay_seg_PSD();
+      delay_seg_Z = bundle2->get_delay_seg_Z()/units::cm;
+      delay_total_E = bundle2->get_delay_total_E()/units::MeV;
+      
+      flag_geometry = geometry.RowColDiff(bundle1->get_prompt_maxseg_no(), bundle2->get_delay_seg_no());
+      delta_t = bundle2->get_t0() - bundle1->get_t0();
+      T_IBD->Fill();
+    }
+    
     
     file1->Write();
     file1->Close();
