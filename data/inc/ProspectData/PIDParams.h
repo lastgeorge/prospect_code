@@ -10,6 +10,8 @@ namespace Prospect{
     double muon_tot_E_llimit; // low and high range
     // veto ...
     double muon_veto_time;
+    double muon_showern_veto_time;
+    double muon_upstream_veto_time;
     
     // high energy neutron ... 
     double neutron_E_llimit;
@@ -45,6 +47,12 @@ namespace Prospect{
     
     double get_muon_veto_time(){return muon_veto_time;};
     void set_muon_veto_time(double val){muon_veto_time=val;};
+
+    double get_muon_showern_veto_time(){return muon_showern_veto_time;};
+    void set_muon_showern_veto_time(double val){muon_showern_veto_time=val;};
+
+    double get_muon_upstream_veto_time(){return muon_upstream_veto_time;};
+    void set_muon_upstream_veto_time(double val){muon_upstream_veto_time=val;};
     
     double get_neutron_E_llimit();
     void set_neutron_E_llimit(double val);

@@ -95,6 +95,13 @@ int main(int argc, char* argv[])
     T_delay->Branch("delay_seg_Z",&delay_seg_Z,"delay_seg_Z/D");
     T_delay->Branch("delay_total_E",&delay_total_E,"delay_total_E/D");
 
+    double time_to_prev_muon;
+    double time_to_prev_showern;
+    double time_to_prev_delay;
+    T_delay->Branch("time_to_prev_muon",&time_to_prev_muon,"time_to_prev_muon/D");
+    T_delay->Branch("time_to_prev_showern",&time_to_prev_showern,"time_to_prev_showern/D");
+    T_delay->Branch("time_to_prev_delay",&time_to_prev_delay,"time_to_prev_delay/D");
+    
     double prompt_maxseg_E;
     int prompt_maxseg_no;
     double prompt_maxseg_PSD;
@@ -138,7 +145,10 @@ int main(int argc, char* argv[])
     
     int delayn_count = 0;
 
-
+    double prev_muon_time=-1;
+    double prev_showern_time=-1;
+    double prev_delay_time = -1;
+    
     std::list<Bundle*> prompt_list; // save all the prompt
     
     for (int i=0;i!=T->GetEntries();i++){
@@ -159,37 +169,70 @@ int main(int argc, char* argv[])
       // if (i==500000) break;
       
       if (bundle->is_muon()){
-	if (veto_times.size()==0){
-	  veto_times.push_back(std::make_pair(bundle->get_t0(),bundle->get_t0()+pid_cuts.get_muon_veto_time()+IBD_delta_t.second));
-	}else{
-	  if (bundle->get_t0() > veto_times.back().second){
-	    veto_times.push_back(std::make_pair(bundle->get_t0(),bundle->get_t0()+pid_cuts.get_muon_veto_time()+IBD_delta_t.second));
+
+	if (bundle->is_showern()){
+	  if (veto_times.size()==0){
+	    veto_times.push_back(std::make_pair(bundle->get_t0()+pid_cuts.get_muon_upstream_veto_time() ,
+						bundle->get_t0()+pid_cuts.get_muon_showern_veto_time()+IBD_delta_t.second));
 	  }else{
-	    veto_times.back().second = bundle->get_t0()+pid_cuts.get_muon_veto_time()+IBD_delta_t.second;
+	    if (bundle->get_t0()+pid_cuts.get_muon_upstream_veto_time()> veto_times.back().second){
+	      veto_times.push_back(std::make_pair(bundle->get_t0()+pid_cuts.get_muon_upstream_veto_time(),
+						  bundle->get_t0()+pid_cuts.get_muon_showern_veto_time()+IBD_delta_t.second));
+	    }else{
+	      veto_times.back().second = bundle->get_t0() + pid_cuts.get_muon_showern_veto_time()+IBD_delta_t.second;
+	    }
+	  }
+	}else{
+	  if (veto_times.size()==0){
+	    veto_times.push_back(std::make_pair(bundle->get_t0()+pid_cuts.get_muon_upstream_veto_time() ,
+						bundle->get_t0()+pid_cuts.get_muon_veto_time()+IBD_delta_t.second));
+	  }else{
+	    if (bundle->get_t0()+pid_cuts.get_muon_upstream_veto_time()> veto_times.back().second){
+	      veto_times.push_back(std::make_pair(bundle->get_t0()+pid_cuts.get_muon_upstream_veto_time(),
+						  bundle->get_t0()+pid_cuts.get_muon_veto_time()+IBD_delta_t.second));
+	    }else{
+	      veto_times.back().second = bundle->get_t0() + pid_cuts.get_muon_veto_time()+IBD_delta_t.second;
+	    }
+	  }
+	}
+	prev_muon_time = bundle->get_t0();
+      }else if (bundle->is_showern()){
+	if (!bundle->is_delay_cand()){
+	  
+	  if (veto_times.size()==0){
+	    veto_times.push_back(std::make_pair(bundle->get_t0()+pid_cuts.get_muon_upstream_veto_time() ,
+						bundle->get_t0()+pid_cuts.get_neutron_mult_veto_time()+IBD_delta_t.second));
+	  }else{
+	    if (bundle->get_t0()+pid_cuts.get_muon_upstream_veto_time()> veto_times.back().second){
+	      veto_times.push_back(std::make_pair(bundle->get_t0()+pid_cuts.get_muon_upstream_veto_time(),
+						  bundle->get_t0()+pid_cuts.get_neutron_mult_veto_time()+IBD_delta_t.second));
+	    }else{
+	      veto_times.back().second = bundle->get_t0() + pid_cuts.get_neutron_mult_veto_time()+IBD_delta_t.second;
+	    }
 	  }
 	}
       }
       
 
-      if (bundle->is_showern()){
-	showern_count ++;
-	if (bundle->is_muon())
-	  showern_muon_count++;
-      }
+      
 
-      // if (bundle->is_delay_cand()){
-      // delay_seg_E = bundle->get_delay_seg_E();
-      // delay_seg_no = bundle->get_delay_seg_no();
-      // delay_seg_PSD = bundle->get_delay_seg_PSD();
-      // delay_total_E = bundle->get_delay_total_E();
-      // T_delay->Fill();
-      // }else if (bundle->is_prompt_cand()){
-      // prompt_maxseg_E = bundle->get_prompt_maxseg_E();
-      // prompt_maxseg_no = bundle->get_prompt_maxseg_no();
-      // prompt_maxseg_PSD = bundle->get_prompt_maxseg_PSD();
-      // prompt_total_E = bundle->get_prompt_total_E();
-      //	T_prompt->Fill();
-      // }
+      if (bundle->is_delay_cand()){
+	delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
+	delay_seg_no = bundle->get_delay_seg_no();
+	delay_seg_PSD = bundle->get_delay_seg_PSD();
+	delay_total_E = bundle->get_delay_total_E()/units::MeV;
+	time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
+	time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
+	time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
+	
+	if (bundle->get_t0() > veto_times.back().second){
+	  T_delay->Fill();
+	  prev_delay_time = bundle->get_t0();
+	}
+      }
+      
+      
+      
 
       bool flag_save_bundle = false;
       
@@ -216,7 +259,7 @@ int main(int argc, char* argv[])
 	  }
 
 	  for (auto it = prompt_list.begin(); it!=prompt_list.end(); it++){
-	    if (checkIBD(std::make_pair(*it,bundle))){
+	    if (checkIBD(std::make_pair(*it,bundle))  ){
 	      prompt_maxseg_E = (*it)->get_prompt_maxseg_E()/units::MeV;
 	      prompt_maxseg_no = (*it)->get_prompt_maxseg_no();
 	      prompt_maxseg_PSD = (*it)->get_prompt_maxseg_PSD();
@@ -232,7 +275,8 @@ int main(int argc, char* argv[])
 	      flag_geometry = geometry.RowColDiff((*it)->get_prompt_maxseg_no(), bundle->get_delay_seg_no());
 	      delta_t = bundle->get_t0() - (*it)->get_t0();
 
-	      T_IBD->Fill();
+	      if (bundle->get_t0()-prev_showern_time > 250*units::microsecond)
+		T_IBD->Fill();
 	      
 	      break;
 	    }
@@ -242,7 +286,8 @@ int main(int argc, char* argv[])
 	}
       }
 
-      
+      if (bundle->is_showern()&& (!(bundle->is_muon())) && (!bundle->is_delay_cand()))
+	prev_showern_time = bundle->get_t0();
 
       if (!flag_save_bundle)
 	delete bundle;

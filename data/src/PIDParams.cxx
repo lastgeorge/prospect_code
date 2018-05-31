@@ -6,12 +6,15 @@ PIDParams::PIDParams(){
   // muon veto energy
   muon_tot_E_llimit = 15*units::MeV;
   // muon veto time
+  muon_showern_veto_time = 160*units::microsecond;
   muon_veto_time = 100*units::microsecond;
 
+  muon_upstream_veto_time = -10*units::microsecond; // same for below ... 
+  
   // neutron veto energy
   neutron_E_llimit = 0.25*units::MeV; 
   // neutron veto time  +- 100 us
-  neutron_mult_veto_time = 100*units::microsecond;
+  neutron_mult_veto_time = 180*units::microsecond;
   
   // prompt energy
   prompt_E[0] = 0.25 *units::MeV;
