@@ -143,11 +143,13 @@ int Geometry::RowColDiff(int segNo1, int segNo2){
   // 2 corner ...
   // -1 not connected ... 
   
-  int result = -1;
+  int result = 0;
   if (std::fabs(nRow_1-nRow_2)<=1)
     result += fabs(nRow_1-nRow_2);
   if (std::fabs(nCol_1-nCol_2)<=1)
     result += fabs(nCol_1-nCol_2);
+
+  if (result >2) result = -1;
   return result;
 }
 

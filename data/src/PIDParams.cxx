@@ -12,7 +12,7 @@ PIDParams::PIDParams(){
   neutron_E_llimit = 0.25*units::MeV; 
   // neutron veto time  +- 100 us
   neutron_mult_veto_time = 100*units::microsecond;
-    
+  
   // prompt energy
   prompt_E[0] = 0.25 *units::MeV;
   prompt_E[1] = 10 * units::MeV;
@@ -31,19 +31,19 @@ PIDParams::PIDParams(){
   delta_z[0] = 18*units::cm; // same 
   delta_z[1] = 14*units::cm; // adjacent
   delta_z[2] = 5*units::cm; // corner
-    
+  
   // neutrono PSD ...
   Double_t E_n[2]={0.01*units::MeV, 1e9*units::MeV};
-  Double_t PSD_n_low[2]={0.2,0.2};
-  Double_t PSD_n_high[2]={0.32,0.32};
+  Double_t PSD_n_low[2]={0.21,0.21}; // PID
+  Double_t PSD_n_high[2]={0.33,0.33};
 
   gPSD_neutron_low = new TGraph(2,E_n,PSD_n_low);
   gPSD_neutron_high = new TGraph(2,E_n,PSD_n_high);
   
   // gamma PSD ...
   Double_t E_g[2]={0.01*units::MeV, 1e9*units::MeV};
-  Double_t PSD_g_low[2]={0.05,0.05};
-  Double_t PSD_g_high[2]={0.2,0.2};
+  Double_t PSD_g_low[2]={-0.01,-0.01};
+  Double_t PSD_g_high[2]={0.21,0.21}; // gamma ...
 
   gPSD_gamma_low = new TGraph(2,E_g,PSD_g_low);
   gPSD_gamma_high = new TGraph(2,E_g, PSD_g_high);
