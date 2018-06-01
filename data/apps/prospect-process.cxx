@@ -81,8 +81,8 @@ int main(int argc, char* argv[])
     TTree *T_delay = new TTree("T_delay","T_delay");
     T_delay->SetDirectory(file1);
 
-    TTree *T_prompt = new TTree("T_prompt","T_prompt");
-    T_prompt->SetDirectory(file1);
+    // TTree *T_prompt = new TTree("T_prompt","T_prompt");
+    // T_prompt->SetDirectory(file1);
     
     double delay_seg_E;
     int delay_seg_no;
@@ -108,11 +108,11 @@ int main(int argc, char* argv[])
     double prompt_maxseg_PSD;
     double prompt_maxseg_Z;
     double prompt_total_E;
-    T_prompt->Branch("prompt_maxseg_E",&prompt_maxseg_E,"prompt_maxseg_E/D");
-    T_prompt->Branch("prompt_maxseg_no",&prompt_maxseg_no,"prompt_maxseg_no/I");
-    T_prompt->Branch("prompt_maxseg_PSD",&prompt_maxseg_PSD,"prompt_maxseg_PSD/D");
-    T_prompt->Branch("prompt_maxseg_Z",&prompt_maxseg_Z,"prompt_maxseg_Z/D");
-    T_prompt->Branch("prompt_total_E",&prompt_total_E,"prompt_total_E/D");
+    // T_prompt->Branch("prompt_maxseg_E",&prompt_maxseg_E,"prompt_maxseg_E/D");
+    // T_prompt->Branch("prompt_maxseg_no",&prompt_maxseg_no,"prompt_maxseg_no/I");
+    // T_prompt->Branch("prompt_maxseg_PSD",&prompt_maxseg_PSD,"prompt_maxseg_PSD/D");
+    // T_prompt->Branch("prompt_maxseg_Z",&prompt_maxseg_Z,"prompt_maxseg_Z/D");
+    // T_prompt->Branch("prompt_total_E",&prompt_total_E,"prompt_total_E/D");
 
     TTree *T_IBD = new TTree("T_IBD","T_IBD");
     T_IBD->SetDirectory(file1);
@@ -132,6 +132,12 @@ int main(int argc, char* argv[])
     double delta_t;
     T_IBD->Branch("delta_t",&delta_t,"delta_t/D");
 
+    TTree *T_sum = new TTree("T_sum","T_sum");
+    T_sum->SetDirectory(file1);
+    double total_time;
+    double total_veto_time;
+    T_sum->Branch("total_time",&total_time,"total_time/D");
+    T_sum->Branch("total_veto_time",&total_veto_time,"total_veto_time/D");
     
     
     std::cout << "Total Entries: " << T->GetEntries()/1e6 << " M"  << std::endl;
@@ -335,11 +341,18 @@ int main(int argc, char* argv[])
 	veto_times.at(i).first = start_time;
       if (veto_times.at(i).second > end_time)
 	veto_times.at(i).second = end_time;
-      tot_veto_time += veto_times.at(i).second - veto_times.at(i).first;
+      if (veto_times.at(i).second - veto_times.at(i).first>0)
+	tot_veto_time += veto_times.at(i).second - veto_times.at(i).first;
     }
 
     std::cout << "Total veto segs: " << veto_times.size() << " total veto time " << tot_veto_time/units::second << " seconds" << std::endl;
-    std::cout << showern_count << " " << showern_muon_count << std::endl;
+
+    total_time = (end_time - start_time)/units::second;
+    total_veto_time = tot_veto_time/units::second;
+    T_sum->Fill();
+    
+    
+    //    std::cout << showern_count << " " << showern_muon_count << std::endl;
     
 
     // for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
