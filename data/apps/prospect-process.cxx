@@ -340,6 +340,7 @@ int main(int argc, char* argv[])
 	  // T_delay->Fill();
 	  
 	  delay_list.push_back(bundle);
+	  
 	  prev_delay_time = bundle->get_t0();
 	  flag_save_bundle = true;
 
@@ -410,6 +411,46 @@ int main(int argc, char* argv[])
       //      std::cout << delay_list.size() << std::endl;
       
     }
+
+    //std::vector<std::pair<double,double>> veto_times;
+    
+    // calculate the life time for each accidental ...  
+    {
+      for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
+	Bundle *bundle = *it;
+	double t1, t2, t3, t4;
+	t1 = bundle->get_t0() - acc_time_range_max;
+	if (t1 < start_time) t1 = start_time;
+	t2 = bundle->get_t0() - acc_time_range_min;
+	if (t2 < start_time) t2 = start_time;
+	t3 = bundle->get_t0() + acc_time_range_min;
+	if (t3>end_time) t3 = end_time;
+	t4 = bundle->get_t0() + acc_time_range_max;
+	if (t4>end_time) t4 = end_time;
+
+	std::vector<std::pair<double,double>> temp_veto_times;
+	
+	for (auto it = veto_times.begin(); it!=veto_times.end(); it++){
+	  double time1 = it->first;
+	  double time2 = it->second;
+
+	  if (time1 > t1 && time1 <= t2 || time2 > t1 && time2 <= t2){
+	    temp_veto_times.push_back(std::make_pair(std::max(t1,time1),std::min(t2,time2)));
+	  }
+	  
+	  if (time1 > t3 && time1 <=t4 || time2>t3 && time2 <= t4){
+	    temp_veto_times.push_back(std::make_pair(std::max(t3,time1),std::min(t4,time2)));
+	  }
+	}
+	double temp_acc_total_time = t2-t1 + t4-t3;
+	for (auto it = temp_veto_times.begin(); it!=temp_veto_times.end(); it++){
+	  temp_acc_total_time -= it->second - it->first;
+	}
+	//std::cout << temp_acc_total_time/units::microsecond << std::endl;
+	map_delay_acc_time[bundle] = temp_acc_total_time;
+	
+      }
+    }
     
     
     for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
@@ -419,6 +460,9 @@ int main(int argc, char* argv[])
       delay_seg_PSD = bundle->get_delay_seg_PSD();
       delay_total_E = bundle->get_delay_total_E()/units::MeV;
       delay_seg_Z = bundle->get_delay_seg_Z()/units::cm;
+
+      acc_delay_time = map_delay_acc_time[bundle]/units::microsecond;
+      
       // time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
       // time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
       // time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
