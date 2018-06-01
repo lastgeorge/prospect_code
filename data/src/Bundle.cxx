@@ -108,8 +108,8 @@ void Bundle::PID(){
   // if (geometry.is_dead_seg(mSeg) || geometry.is_veto_seg(mSeg))
   //   return;
   
-  std::pair<double,double> n_PSD = pid_cuts.get_neutron_PSD(E_total);
-  std::pair<double,double> g_PSD = pid_cuts.get_gamma_PSD(E_total);
+  
+  
 
   double muon_tot_E_llimit = pid_cuts.get_muon_tot_E_llimit();
   
@@ -125,6 +125,7 @@ void Bundle::PID(){
   }
   
   for (size_t i=0;i!=vE.size();i++){
+    std::pair<double,double> n_PSD = pid_cuts.get_neutron_PSD(vE.at(i)*units::MeV);
     if (vE.at(i)>neutron_E_llimit && vPSD.at(i) > n_PSD.first){
       flag_showern = true;
       break;
@@ -141,6 +142,9 @@ void Bundle::PID(){
 	  || vSeg.at(i)<geometry.min_SegNo || vSeg.at(i)>geometry.max_SegNo
 	  || vZ.at(i) < fid_z_cut.first || vZ.at(i) > fid_z_cut.second)
 	continue;
+
+      std::pair<double,double> n_PSD = pid_cuts.get_neutron_PSD(vE.at(i)*units::MeV);
+      std::pair<double,double> g_PSD = pid_cuts.get_gamma_PSD(vE.at(i)*units::MeV);
       
       if (vE.at(i) > IBD_d_E.first && vE.at(i) < IBD_d_E.second &&
 	  vPSD.at(i) > n_PSD.first && vPSD.at(i) < n_PSD.second){
@@ -168,7 +172,7 @@ void Bundle::PID(){
     
     if (prompt_total_E < IBD_p_E.first || prompt_total_E > IBD_p_E.second )
       flag_prompt_cand = false;
-    if (delay_total_E > delay_seg_E + 0.1*units::MeV)
+    if (delay_total_E > delay_seg_E + 0.05*units::MeV)
       flag_delay_cand = false;
   }
 

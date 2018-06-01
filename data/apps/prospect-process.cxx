@@ -141,6 +141,8 @@ int main(int argc, char* argv[])
     double start_time;
     double end_time;
     std::vector<std::pair<double,double>> veto_times;
+    veto_times.push_back(std::make_pair(0,0));
+    
     int showern_count = 0;
     int showern_muon_count = 0;
     
@@ -200,7 +202,8 @@ int main(int argc, char* argv[])
 	    }
 	  }
 	}
-	prev_muon_time = bundle->get_t0();
+	
+	
       }else if (bundle->is_showern()){
 	if (!bundle->is_delay_cand()){
 	  
@@ -232,6 +235,7 @@ int main(int argc, char* argv[])
 
       // good delay candidate
       if (bundle->is_delay_cand()){
+	
 	if (bundle->get_t0() > veto_times.back().second){
 	  std::vector<std::list<Bundle*>::iterator> to_be_removed;
 
@@ -252,9 +256,6 @@ int main(int argc, char* argv[])
 	  for (auto it = prompt_list.begin(); it!=prompt_list.end(); it++){
 	    if (checkIBD(std::make_pair(*it,bundle))  ){
 	      temp_IBDs.push_back(std::make_pair(*it,bundle));
-	      // if (bundle->get_t0()-prev_showern_time > 250*units::microsecond)
-	      // T_IBD->Fill();
-	      // break;
 	    }
 	  }
 	  
@@ -262,10 +263,10 @@ int main(int argc, char* argv[])
 	  if (temp_IBDs.size()>0 ){
 	    bool flag_save = true;
 
-	    //	    if (delay_list.size()>0){
-	    //  if ((bundle->get_t0() - delay_list.back()->get_t0()) < pid_cuts.get_nn_veto_time())
-	    //	flag_save = false;
-	    // }
+	    if (delay_list.size()>0){
+	      if ((bundle->get_t0() - delay_list.back()->get_t0()) < pid_cuts.get_nn_veto_time())
+	    	flag_save = false;
+	    }
 	    
 	    if (flag_save){
 	      Bundle *prompt = new Bundle(temp_IBDs.front().first);
@@ -282,30 +283,45 @@ int main(int argc, char* argv[])
       if (bundle->is_delay_cand()){
 	if (bundle->get_t0() > veto_times.back().second){
 
-	  // if (IBD_list.size()>0)
-	  //   if (IBD_list.back().second->get_t0()!=bundle->get_t0() &&
-	  // 	bundle->get_t0() - IBD_list.back().second->get_t0()<  pid_cuts.get_nn_veto_time()){
-	  //     std::vector<std::list<std::pair<Bundle*,Bundle*> >::iterator> to_be_removed;
-	  //     // check IBDs ahead of them ... 
-	  //     for (auto it=IBD_list.begin(); it!= IBD_list.end(); it++){
-	  // 	if ( it->second->get_t0()!=bundle->get_t0() &&
-	  // 	   bundle->get_t0() - it->second->get_t0() <  pid_cuts.get_nn_veto_time())
-	  // 	  to_be_removed.push_back(it);
-	  //     }
-	  //     if (to_be_removed.size()>0){
-	  // 	IBD_list.erase(to_be_removed.front(),to_be_removed.back());
-	  // 	IBD_list.erase(to_be_removed.back());
-	  //     }
-	  //   }
+	  if (IBD_list.size()>0)
+	    if (IBD_list.back().second->get_t0()!=bundle->get_t0() &&
+	  	bundle->get_t0() - IBD_list.back().second->get_t0()<  pid_cuts.get_nn_veto_time()){
+	      std::vector<std::list<std::pair<Bundle*,Bundle*> >::iterator> to_be_removed;
+	      // check IBDs ahead of them ... 
+	      for (auto it=IBD_list.begin(); it!= IBD_list.end(); it++){
+	  	if ( it->second->get_t0()!=bundle->get_t0() &&
+		     bundle->get_t0() - it->second->get_t0() <  pid_cuts.get_nn_veto_time())
+	  	  to_be_removed.push_back(it);
+	      }
+	      if (to_be_removed.size()>0){
+	  	IBD_list.erase(to_be_removed.front(),to_be_removed.back());
+	  	IBD_list.erase(to_be_removed.back());
+	      }
+	    }
+	  
+
+	  delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
+	  delay_seg_no = bundle->get_delay_seg_no();
+	  delay_seg_PSD = bundle->get_delay_seg_PSD();
+	  delay_total_E = bundle->get_delay_total_E()/units::MeV;
+	  time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
+	  time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
+	  time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
+	  T_delay->Fill();
 	  
 	  delay_list.push_back(bundle);
 	  prev_delay_time = bundle->get_t0();
 	  flag_save_bundle = true;
+
+	  
 	}
       }
       
       if (bundle->is_showern()&& (!(bundle->is_muon())) && (!bundle->is_delay_cand()))
 	prev_showern_time = bundle->get_t0();
+      
+      if (bundle->is_muon() && (!bundle->is_showern()))
+	prev_muon_time = bundle->get_t0();
       
       if (!flag_save_bundle)
 	delete bundle;
@@ -315,6 +331,10 @@ int main(int argc, char* argv[])
     std::cout << "Total time: " << (end_time - start_time)/units::second << " seconds" << std::endl;
     double tot_veto_time = 0;
     for (size_t i=0;i!=veto_times.size();i++){
+      if (veto_times.at(i).first < start_time)
+	veto_times.at(i).first = start_time;
+      if (veto_times.at(i).second > end_time)
+	veto_times.at(i).second = end_time;
       tot_veto_time += veto_times.at(i).second - veto_times.at(i).first;
     }
 
@@ -322,17 +342,17 @@ int main(int argc, char* argv[])
     std::cout << showern_count << " " << showern_muon_count << std::endl;
     
 
-    for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
-      Bundle *bundle = *it;
-      delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
-      delay_seg_no = bundle->get_delay_seg_no();
-      delay_seg_PSD = bundle->get_delay_seg_PSD();
-      delay_total_E = bundle->get_delay_total_E()/units::MeV;
-      time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
-      time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
-      time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
-      T_delay->Fill();
-    }
+    // for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
+    //   Bundle *bundle = *it;
+    //   delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
+    //   delay_seg_no = bundle->get_delay_seg_no();
+    //   delay_seg_PSD = bundle->get_delay_seg_PSD();
+    //   delay_total_E = bundle->get_delay_total_E()/units::MeV;
+    //   time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
+    //   time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
+    //   time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
+    //   T_delay->Fill();
+    // }
 
     for (auto it = IBD_list.begin(); it!=IBD_list.end(); it++){
       Bundle* bundle1 = it->first;
