@@ -167,9 +167,9 @@ int main(int argc, char* argv[])
     double acc_time_range_min = 500*units::microsecond;
     
     std::map<Bundle*,double> map_delay_acc_time;
-    std::map<Bundle*,std::vector<Bundle*> > map_delay_acc_prompt;
+    std::map<Bundle*,std::list<Bundle*> > map_delay_acc_prompt;
 
-    std::map<double,std::list<Bundle*>> map_seg_prompt_list;
+    std::map<int,std::list<Bundle*>> map_seg_prompt_list;
 
     
     double start_time;
@@ -339,7 +339,43 @@ int main(int argc, char* argv[])
       // save all delays ... 
       if (bundle->is_delay_cand()){
 	if (bundle->get_t0() > veto_times.back().second){
+
+	  // now form the accidental list ... 
+	  std::vector<int> segs;
+	  segs.push_back(bundle->get_delay_seg_no());
+	  std::set<int> adj_segs = geometry.AdjSegs(bundle->get_delay_seg_no());
+	  std::copy(adj_segs.begin(), adj_segs.end(), std::back_inserter(segs));
+
+	  std::set<int> cor_segs = geometry.CorSegs(bundle->get_delay_seg_no());
+	  std::copy(cor_segs.begin(), cor_segs.end(), std::back_inserter(segs));
+
+	  std::list<Bundle*> acc_prompt_list;
 	  
+	  
+	  // std::cout << adj_segs.size() << " " << cor_segs.size() << std::endl;
+	  for (size_t j=0;j!=segs.size();j++){
+	    if (map_seg_prompt_list.find(segs.at(j)) != map_seg_prompt_list.end()){
+	      for (auto it = map_seg_prompt_list[segs.at(j)].begin(); it!=map_seg_prompt_list[segs.at(j)].end();it++){
+		if (checkacc(std::make_pair(*it,bundle))){
+		  Bundle *prompt = new Bundle(*it);
+		  acc_prompt_list.push_back(prompt);
+		}
+	      }
+	    }
+	  }
+	  map_delay_acc_prompt[bundle] = acc_prompt_list; // accidental ...
+	  
+	  // std::cout << acc_prompt_list.size() << std::endl;
+	  // for (auto it = acc_prompt_list.begin(); it!=acc_prompt_list.end(); it++){
+	  //   std::cout << bundle->get_delay_seg_no() << " " << (*it)->get_prompt_maxseg_no() << " " << (bundle->get_t0() - (*it)->get_t0())/units::microsecond << " " << (bundle->get_delay_seg_Z() - (*it)->get_prompt_maxseg_Z())/units::cm << std::endl;
+	  // }
+	  
+	  
+	  
+	  delay_list.push_back(bundle);
+	  prev_delay_time = bundle->get_t0();
+	  flag_save_bundle = true;
+
 	  // if (IBD_list.size()>0)
 	  //   if (IBD_list.back().second->get_t0()!=bundle->get_t0() &&
 	  // 	bundle->get_t0() - IBD_list.back().second->get_t0()<  pid_cuts.get_nn_veto_time()){
@@ -364,9 +400,7 @@ int main(int argc, char* argv[])
 	  // time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
 	  // T_delay->Fill();
 	  
-	  delay_list.push_back(bundle);
-	  prev_delay_time = bundle->get_t0();
-	  flag_save_bundle = true;
+	  
 	}
       }
       

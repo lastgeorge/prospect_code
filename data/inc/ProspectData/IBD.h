@@ -6,6 +6,7 @@
 namespace Prospect{
 
   bool checkIBD(std::pair<Bundle*, Bundle*> IBD_cand);
+  bool checkacc(std::pair<Bundle*, Bundle*> IBD_cand);
 }
 
 

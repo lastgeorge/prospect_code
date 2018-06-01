@@ -112,7 +112,7 @@ std::set<int> Geometry::CorSegs(int segNo){
   if (seg_no!=-1){
     seg_nos.insert(seg_no);
   }
-  seg_no = Seg_No(nRow-1,nCol+1);
+  seg_no = Seg_No(nRow+1,nCol-1);
   if (seg_no!=-1){
     seg_nos.insert(seg_no);
   }

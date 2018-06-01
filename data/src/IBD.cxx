@@ -38,3 +38,31 @@ bool Prospect::checkIBD(std::pair<Bundle*, Bundle*> IBD_cand){
 
   return false;
 }
+
+
+bool Prospect::checkacc(std::pair<Bundle*, Bundle*> IBD_cand){
+  // assuming other things have been checked
+  Bundle *prompt = IBD_cand.first;
+  Bundle *delay = IBD_cand.second;
+
+  PIDParams& pid_cuts = Singleton<PIDParams>::Instance();
+  Geometry& geometry = Singleton<Geometry>::Instance();
+  
+  // check coincidence vertex
+  int flag_geometry = geometry.RowColDiff(prompt->get_prompt_maxseg_no(), delay->get_delay_seg_no());
+  if (flag_geometry==0){
+    if (fabs(prompt->get_prompt_maxseg_Z() - delay->get_delay_seg_Z())<pid_cuts.get_delta_z_cut(0)){
+      return true;
+    }
+  }else if (flag_geometry==1){
+    if (fabs(prompt->get_prompt_maxseg_Z() - delay->get_delay_seg_Z())<pid_cuts.get_delta_z_cut(1)){
+      return true;
+    }
+  }else if (flag_geometry==2){
+    if (fabs(prompt->get_prompt_maxseg_Z() - delay->get_delay_seg_Z())<pid_cuts.get_delta_z_cut(2)){
+      return true;
+    }
+  }
+  
+  return false;
+}
