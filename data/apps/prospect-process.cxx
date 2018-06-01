@@ -162,6 +162,11 @@ int main(int argc, char* argv[])
     
     std::cout << "Total Entries: " << T->GetEntries()/1e6 << " M"  << std::endl;
     
+    // accidental time_range +- 500 us --> 6000 us
+    double acc_time_range_max = 6000*units::microsecond;
+    double acc_time_range_min = 500*units::microsecond;
+    
+    std::map<Bundle*,double> map_delay_acc_time;
     
     
     double start_time;
@@ -301,10 +306,9 @@ int main(int argc, char* argv[])
 	    }
 	  }
 	  //  std::cout << temp_IBDs.size() << std::endl;
-	  
-	  
 	}
       }
+      
       
       if (bundle->is_delay_cand()){
 	if (bundle->get_t0() > veto_times.back().second){
