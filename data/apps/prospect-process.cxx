@@ -189,6 +189,9 @@ int main(int argc, char* argv[])
     std::list<Bundle*> prompt_list; // save all the prompt
 
     std::list<Bundle*> delay_list;
+
+    std::list<Bundle*> temp_delay_list;
+    
     std::list<std::pair<Bundle*, Bundle*>> IBD_list;
     std::set<Bundle*> saved_bundles;
     
@@ -263,6 +266,30 @@ int main(int argc, char* argv[])
 	  std::list<Bundle*> temp_list;
 	  temp_list.push_back(bundle);
 	  map_seg_prompt_list[bundle->get_prompt_maxseg_no()] = temp_list;
+	}
+
+	{
+	  //check temp_delay_list ...
+	  std::vector<std::list<Bundle*>::iterator > to_be_removed;
+	  for (auto it = temp_delay_list.begin(); it!=temp_delay_list.end(); it++){
+	    if (bundle->get_t0() - (*it)->get_t0() > acc_time_range_max){
+	      to_be_removed.push_back(it);
+	    }
+	  }
+	  if (to_be_removed.size()>0){
+	    temp_delay_list.erase(to_be_removed.front(), to_be_removed.back());
+	    temp_delay_list.erase(to_be_removed.back());
+	  }
+	  
+	  for (auto it = temp_delay_list.begin(); it!=temp_delay_list.end(); it++){
+	    if (checkacc(std::make_pair(bundle,*it)) && bundle->get_t0() - (*it)->get_t0() > acc_time_range_min &&
+		bundle->get_t0() - (*it)->get_t0() <= acc_time_range_max ){
+	      Bundle *prompt = new Bundle(*bundle);
+	      map_delay_acc_prompt[*it].push_back(prompt);
+	      //  acc_prompt_list.push_back(prompt);
+	    }
+	  }
+	  
 	}
       }
 
@@ -356,7 +383,8 @@ int main(int argc, char* argv[])
 	  for (size_t j=0;j!=segs.size();j++){
 	    if (map_seg_prompt_list.find(segs.at(j)) != map_seg_prompt_list.end()){
 	      for (auto it = map_seg_prompt_list[segs.at(j)].begin(); it!=map_seg_prompt_list[segs.at(j)].end();it++){
-		if (checkacc(std::make_pair(*it,bundle))){
+		if (checkacc(std::make_pair(*it,bundle)) && bundle->get_t0() - (*it)->get_t0() > acc_time_range_min &&
+		    bundle->get_t0() - (*it)->get_t0() <= acc_time_range_max ){
 		  Bundle *prompt = new Bundle(*it);
 		  acc_prompt_list.push_back(prompt);
 		}
@@ -365,14 +393,17 @@ int main(int argc, char* argv[])
 	  }
 	  map_delay_acc_prompt[bundle] = acc_prompt_list; // accidental ...
 	  
-	  // std::cout << acc_prompt_list.size() << std::endl;
-	  // for (auto it = acc_prompt_list.begin(); it!=acc_prompt_list.end(); it++){
-	  //   std::cout << bundle->get_delay_seg_no() << " " << (*it)->get_prompt_maxseg_no() << " " << (bundle->get_t0() - (*it)->get_t0())/units::microsecond << " " << (bundle->get_delay_seg_Z() - (*it)->get_prompt_maxseg_Z())/units::cm << std::endl;
-	  // }
+	  //	  std::cout << acc_prompt_list.size() << std::endl;
+	  //for (auto it = acc_prompt_list.begin(); it!=acc_prompt_list.end(); it++){
+	  //  std::cout << bundle->get_delay_seg_no() << " " << (*it)->get_prompt_maxseg_no() << " " << (bundle->get_t0() - (*it)->get_t0())/units::microsecond << " " << (bundle->get_delay_seg_Z() - (*it)->get_prompt_maxseg_Z())/units::cm << std::endl;
+	  //}
 	  
 	  
 	  
 	  delay_list.push_back(bundle);
+	  // temp ... 
+	  temp_delay_list.push_back(bundle);
+	  
 	  prev_delay_time = bundle->get_t0();
 	  flag_save_bundle = true;
 
@@ -466,25 +497,41 @@ int main(int argc, char* argv[])
 	
 	for (auto it1 = veto_times.begin(); it1!=veto_times.end(); it1++){
 	  double time1 = it1->first;
-	  double time2 = it1->second;
-
+	  double time2 = it1->second-IBD_delta_t.second;
 	  if (bundle->get_t0() > time1 && bundle->get_t0() <= time2)
 	    to_be_removed.push_back(it);
-
 	  if (time1 > t1 && time1 <= t2 || time2 > t1 && time2 <= t2){
 	    temp_veto_times.push_back(std::make_pair(std::max(t1,time1),std::min(t2,time2)));
 	  }
-	  
 	  if (time1 > t3 && time1 <=t4 || time2>t3 && time2 <= t4){
 	    temp_veto_times.push_back(std::make_pair(std::max(t3,time1),std::min(t4,time2)));
 	  }
 	}
 	double temp_acc_total_time = t2-t1 + t4-t3;
+
+	std::vector< std::list< Bundle* >::iterator > prompt_to_be_removed;
+	
 	for (auto it1 = temp_veto_times.begin(); it1!=temp_veto_times.end(); it1++){
 	  temp_acc_total_time -= it1->second - it1->first;
+	  for (auto it2 = map_delay_acc_prompt[bundle].begin(); it2!=map_delay_acc_prompt[bundle].end(); it2++){
+	    if ((*it2)->get_t0() > it1->first && (*it2)->get_t0() < it1->second){
+	      prompt_to_be_removed.push_back(it2);
+	    }
+	  }
 	}
+	//std::cout << prompt_to_be_removed.size() << std::endl;
+	for (auto it1 = prompt_to_be_removed.begin(); it1!=prompt_to_be_removed.end(); it1++){
+	  map_delay_acc_prompt[bundle].erase(*it1);
+	}
+
+	
 	//std::cout << temp_acc_total_time/units::microsecond << std::endl;
 	map_delay_acc_time[bundle] = temp_acc_total_time;
+
+	// std::cout << map_delay_acc_prompt[bundle].size() << std::endl;
+	// for (auto it = map_delay_acc_prompt[bundle].begin(); it!=map_delay_acc_prompt[bundle].end(); it++){
+	//   std::cout << bundle->get_delay_seg_no() << " " << (*it)->get_prompt_maxseg_no() << " " << (bundle->get_t0() - (*it)->get_t0())/units::microsecond << " " << (bundle->get_delay_seg_Z() - (*it)->get_prompt_maxseg_Z())/units::cm << std::endl;
+	// }
 	
       }
       
@@ -556,18 +603,46 @@ int main(int argc, char* argv[])
     //std::vector<std::pair<double,double>> veto_times;
     for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
       Bundle *bundle = *it;
-      delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
-      delay_seg_no = bundle->get_delay_seg_no();
-      delay_seg_PSD = bundle->get_delay_seg_PSD();
-      delay_total_E = bundle->get_delay_total_E()/units::MeV;
-      delay_seg_Z = bundle->get_delay_seg_Z()/units::cm;
-
-      acc_delay_time = map_delay_acc_time[bundle]/units::microsecond;
+      
       
       // time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
       // time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
       // time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
-      T_delay->Fill();
+      if ( map_delay_acc_prompt[bundle].size() >0){
+	delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
+	delay_seg_no = bundle->get_delay_seg_no();
+	delay_seg_PSD = bundle->get_delay_seg_PSD();
+	delay_total_E = bundle->get_delay_total_E()/units::MeV;
+	delay_seg_Z = bundle->get_delay_seg_Z()/units::cm;
+	
+	acc_delay_time = map_delay_acc_time[bundle]/units::microsecond;
+
+	std::vector<double> temp_prompt_maxseg_E;
+	std::vector<int> temp_prompt_maxseg_no;
+	std::vector<double> temp_prompt_maxseg_PSD;
+	std::vector<double> temp_prompt_maxseg_Z;
+	std::vector<double> temp_prompt_total_E;
+	std::vector<int> temp_flag_geometry;
+	
+	for (auto it1 = map_delay_acc_prompt[bundle].begin(); it1!= map_delay_acc_prompt[bundle].end(); it1++){
+	  Bundle *prompt = (*it1);
+	  temp_prompt_maxseg_E.push_back(prompt->get_prompt_maxseg_E());
+	  temp_prompt_maxseg_no.push_back(prompt->get_prompt_maxseg_no());
+	  temp_prompt_maxseg_PSD.push_back(prompt->get_prompt_maxseg_PSD());
+	  temp_prompt_maxseg_Z.push_back(prompt->get_prompt_maxseg_Z());
+	  temp_prompt_total_E.push_back(prompt->get_prompt_total_E());
+	  temp_flag_geometry.push_back(geometry.RowColDiff(prompt->get_prompt_maxseg_no(), bundle->get_delay_seg_no()));
+	}
+
+	*Vacc_prompt_maxseg_E = temp_prompt_maxseg_E;
+	*Vacc_prompt_maxseg_no = temp_prompt_maxseg_no;
+	*Vacc_prompt_maxseg_PSD = temp_prompt_maxseg_PSD;
+	*Vacc_prompt_maxseg_Z = temp_prompt_maxseg_Z;
+	*Vacc_prompt_total_E = temp_prompt_total_E;
+	*Vacc_flag_geometry = temp_flag_geometry;
+	
+	T_delay->Fill();
+      }
     }
 
     for (auto it = IBD_list.begin(); it!=IBD_list.end(); it++){
