@@ -89,19 +89,39 @@ int main(int argc, char* argv[])
     double delay_seg_PSD;
     double delay_seg_Z;
     double delay_total_E;
-   
+
+
+    
     T_delay->Branch("delay_seg_E",&delay_seg_E,"delay_seg_E/D");
     T_delay->Branch("delay_seg_no",&delay_seg_no,"delay_seg_no/I");
     T_delay->Branch("delay_seg_PSD",&delay_seg_PSD,"delay_seg_PSD/D");
     T_delay->Branch("delay_seg_Z",&delay_seg_Z,"delay_seg_Z/D");
     T_delay->Branch("delay_total_E",&delay_total_E,"delay_total_E/D");
 
-    double time_to_prev_muon;
-    double time_to_prev_showern;
-    double time_to_prev_delay;
-    T_delay->Branch("time_to_prev_muon",&time_to_prev_muon,"time_to_prev_muon/D");
-    T_delay->Branch("time_to_prev_showern",&time_to_prev_showern,"time_to_prev_showern/D");
-    T_delay->Branch("time_to_prev_delay",&time_to_prev_delay,"time_to_prev_delay/D");
+    double acc_delay_time;
+    std::vector<double> *Vacc_prompt_maxseg_E = new std::vector<double>;
+    std::vector<int> *Vacc_prompt_maxseg_no = new std::vector<int>;
+    std::vector<double> *Vacc_prompt_maxseg_PSD = new std::vector<double>;
+    std::vector<double> *Vacc_prompt_maxseg_Z = new std::vector<double>;
+    std::vector<double> *Vacc_prompt_total_E = new std::vector<double>;
+    std::vector<int> *Vacc_flag_geometry = new std::vector<int>;
+
+    T_delay->Branch("acc_delay_time",&acc_delay_time,"acc_delay_time/D");
+    T_delay->Branch("Vacc_prompt_maxseg_E",&Vacc_prompt_maxseg_E);
+    T_delay->Branch("Vacc_prompt_maxseg_no",&Vacc_prompt_maxseg_no);
+    T_delay->Branch("Vacc_prompt_maxseg_PSD",&Vacc_prompt_maxseg_PSD);
+    T_delay->Branch("Vacc_prompt_maxseg_Z",&Vacc_prompt_maxseg_Z);
+    T_delay->Branch("Vacc_prompt_total_E",&Vacc_prompt_total_E);
+    T_delay->Branch("Vacc_flag_geometry",&Vacc_flag_geometry);
+    
+
+    
+    // double time_to_prev_muon;
+    // double time_to_prev_showern;
+    // double time_to_prev_delay;
+    // T_delay->Branch("time_to_prev_muon",&time_to_prev_muon,"time_to_prev_muon/D");
+    // T_delay->Branch("time_to_prev_showern",&time_to_prev_showern,"time_to_prev_showern/D");
+    // T_delay->Branch("time_to_prev_delay",&time_to_prev_delay,"time_to_prev_delay/D");
     
     double prompt_maxseg_E;
     int prompt_maxseg_no;
@@ -306,14 +326,14 @@ int main(int argc, char* argv[])
 	    }
 	  
 
-	  delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
-	  delay_seg_no = bundle->get_delay_seg_no();
-	  delay_seg_PSD = bundle->get_delay_seg_PSD();
-	  delay_total_E = bundle->get_delay_total_E()/units::MeV;
-	  time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
-	  time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
-	  time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
-	  T_delay->Fill();
+	  // delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
+	  // delay_seg_no = bundle->get_delay_seg_no();
+	  // delay_seg_PSD = bundle->get_delay_seg_PSD();
+	  // delay_total_E = bundle->get_delay_total_E()/units::MeV;
+	  // time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
+	  // time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
+	  // time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
+	  // T_delay->Fill();
 	  
 	  delay_list.push_back(bundle);
 	  prev_delay_time = bundle->get_t0();
@@ -353,19 +373,53 @@ int main(int argc, char* argv[])
     
     
     //    std::cout << showern_count << " " << showern_muon_count << std::endl;
-    
+    {
+      std::set<Bundle*> used_delays;
+      
+      for (auto it = IBD_list.begin(); it!=IBD_list.end(); it++){
+	used_delays.insert(it->second);
+      }
 
-    // for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
-    //   Bundle *bundle = *it;
-    //   delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
-    //   delay_seg_no = bundle->get_delay_seg_no();
-    //   delay_seg_PSD = bundle->get_delay_seg_PSD();
-    //   delay_total_E = bundle->get_delay_total_E()/units::MeV;
-    //   time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
-    //   time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
-    //   time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
-    //   T_delay->Fill();
-    // }
+      Bundle *prev_bundle = 0;
+      for (auto it = delay_list.begin(); it!=delay_list.end(); it++){
+	Bundle *bundle = *it;
+
+	if (prev_bundle!=0){
+	  if (bundle->get_t0() - prev_bundle->get_t0() < pid_cuts.get_nn_veto_time()){
+	    used_delays.insert(prev_bundle);
+	    used_delays.insert(bundle);
+	  }
+	}
+	prev_bundle = bundle;
+      }
+      
+      std::vector< std::list<Bundle*>::iterator > to_be_removed;
+      for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
+	if (used_delays.find(*it)!=used_delays.end())
+	  to_be_removed.push_back(it);
+      }
+
+      // std::cout << to_be_removed.size() << " " << delay_list.size() << std::endl;
+      for (auto it = to_be_removed.begin(); it!=to_be_removed.end(); it++){
+	delay_list.erase(*it);
+      }
+      //      std::cout << delay_list.size() << std::endl;
+      
+    }
+    
+    
+    for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
+      Bundle *bundle = *it;
+      delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
+      delay_seg_no = bundle->get_delay_seg_no();
+      delay_seg_PSD = bundle->get_delay_seg_PSD();
+      delay_total_E = bundle->get_delay_total_E()/units::MeV;
+      delay_seg_Z = bundle->get_delay_seg_Z()/units::cm;
+      // time_to_prev_muon = (bundle->get_t0() - prev_muon_time)/units::microsecond;
+      // time_to_prev_showern = (bundle->get_t0() - prev_showern_time)/units::microsecond;
+      // time_to_prev_delay =  (bundle->get_t0() - prev_delay_time)/units::microsecond;
+      T_delay->Fill();
+    }
 
     for (auto it = IBD_list.begin(); it!=IBD_list.end(); it++){
       Bundle* bundle1 = it->first;
