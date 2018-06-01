@@ -167,7 +167,10 @@ int main(int argc, char* argv[])
     double acc_time_range_min = 500*units::microsecond;
     
     std::map<Bundle*,double> map_delay_acc_time;
-    
+    std::map<Bundle*,std::vector<Bundle*> > map_delay_acc_prompt;
+
+    std::map<double,std::list<Bundle*>> map_seg_prompt_list;
+
     
     double start_time;
     double end_time;
@@ -199,15 +202,12 @@ int main(int argc, char* argv[])
       }
       
       Bundle *bundle = new Bundle(evt,E_total,wPSD,t0,ts_runstart,mE,mSeg,mX,mY,mZ,mPSD, (*vSeg), (*vE), (*vZ), (*vPSD));
-
       bundle->PID();
 
-      // std::cout << i << " " << t0 << std::endl;
-
-      // if (i==500000) break;
       
+      // calculate the veto time ...
+      // note veto time contains upstream ... 
       if (bundle->is_muon()){
-
 	if (bundle->is_showern()){
 	  if (veto_times.size()==0){
 	    veto_times.push_back(std::make_pair(bundle->get_t0()+pid_cuts.get_muon_upstream_veto_time() ,
@@ -233,11 +233,8 @@ int main(int argc, char* argv[])
 	    }
 	  }
 	}
-	
-	
       }else if (bundle->is_showern()){
 	if (!bundle->is_delay_cand()){
-	  
 	  if (veto_times.size()==0){
 	    veto_times.push_back(std::make_pair(bundle->get_t0()+pid_cuts.get_muon_upstream_veto_time() ,
 						bundle->get_t0()+pid_cuts.get_neutron_mult_veto_time()+IBD_delta_t.second));
@@ -254,34 +251,62 @@ int main(int argc, char* argv[])
       
 
       
-
       bool flag_save_bundle = false;
-      
-      
-      
+      // save them ... 
       if (bundle->is_prompt_cand()){
 	prompt_list.push_back(bundle);
 	flag_save_bundle = true;
+
+	if (map_seg_prompt_list.find(bundle->get_prompt_maxseg_no()) != map_seg_prompt_list.end()){
+	  map_seg_prompt_list[bundle->get_prompt_maxseg_no()].push_back(bundle);
+	}else{
+	  std::list<Bundle*> temp_list;
+	  temp_list.push_back(bundle);
+	  map_seg_prompt_list[bundle->get_prompt_maxseg_no()] = temp_list;
+	}
       }
 
+      
+
+      
       // good delay candidate
       if (bundle->is_delay_cand()){
-	
 	if (bundle->get_t0() > veto_times.back().second){
-	  std::vector<std::list<Bundle*>::iterator> to_be_removed;
-
-	  // loop through prompt list and remove anything outside a window, delete them
-	  for (auto it = prompt_list.begin(); it!=prompt_list.end(); it++){
-	    if (bundle->get_t0() - (*it)->get_t0() > IBD_delta_t.second){
-	      to_be_removed.push_back(it);
-	      delete (*it);
+	  // remove IBD list from prompt ... 
+	  {
+	    std::vector<std::list<Bundle*>::iterator> to_be_removed;
+	    // loop through prompt list and remove anything outside a window, delete them
+	    for (auto it = prompt_list.begin(); it!=prompt_list.end(); it++){
+	      if (bundle->get_t0() - (*it)->get_t0() > IBD_delta_t.second){
+		to_be_removed.push_back(it);
+		// delete (*it);
+	      }
+	    }
+	    if (to_be_removed.size()>0){
+	      prompt_list.erase(to_be_removed.front(), to_be_removed.back());
+	      prompt_list.erase(to_be_removed.back());
 	    }
 	  }
-	  if (to_be_removed.size()>0){
-	    prompt_list.erase(to_be_removed.front(), to_be_removed.back());
-	    prompt_list.erase(to_be_removed.back());
+
+	  // for accidental calculations ... 
+	  {
+	    for (auto it = map_seg_prompt_list.begin(); it!=map_seg_prompt_list.end(); it++){
+	      std::vector<std::list<Bundle*>::iterator> to_be_removed;
+	      // remove prompt ... 
+	      for (auto it1 = it->second.begin(); it1!=it->second.end(); it1++){
+		if (bundle->get_t0() - (*it1)->get_t0() > acc_time_range_max){
+		  to_be_removed.push_back(it1);
+		  delete (*it1);
+		}
+	      }
+	      if (to_be_removed.size()>0){
+		it->second.erase(to_be_removed.front(), to_be_removed.back());
+		it->second.erase(to_be_removed.back());
+	      }
+	    }
 	  }
 
+	  
 	  int n_mult = 0;
 	  std::vector<std::pair<Bundle*,Bundle*> > temp_IBDs;
 	  for (auto it = prompt_list.begin(); it!=prompt_list.end(); it++){
@@ -289,47 +314,47 @@ int main(int argc, char* argv[])
 	      temp_IBDs.push_back(std::make_pair(*it,bundle));
 	    }
 	  }
-	  
-	  //if (temp_IBDs.size()==1 ){
-	  if (temp_IBDs.size()>0 ){
-	    bool flag_save = true;
 
-	    if (delay_list.size()>0){
-	      if ((bundle->get_t0() - delay_list.back()->get_t0()) < pid_cuts.get_nn_veto_time())
-	    	flag_save = false;
-	    }
+	  // multiplicity cut ... 
+	  if (temp_IBDs.size()==1 ){
+	  //	  if (temp_IBDs.size()>0 ){
+	    // bool flag_save = true;
+	    // if (delay_list.size()>0){
+	    //   if ((bundle->get_t0() - delay_list.back()->get_t0()) < pid_cuts.get_nn_veto_time())
+	    // 	flag_save = false;
+	    // }
 	    
-	    if (flag_save){
-	      Bundle *prompt = new Bundle(temp_IBDs.front().first);
-	      IBD_list.push_back(std::make_pair(prompt,temp_IBDs.front().second));
-	      flag_save_bundle = true;
-	    }
+	    // if (flag_save){
+	    Bundle *prompt = new Bundle(temp_IBDs.front().first);
+	    IBD_list.push_back(std::make_pair(prompt,temp_IBDs.front().second));
+	    flag_save_bundle = true;
+	    // }
 	  }
 	  //  std::cout << temp_IBDs.size() << std::endl;
 	}
       }
       
-      
+
+
+      // save all delays ... 
       if (bundle->is_delay_cand()){
 	if (bundle->get_t0() > veto_times.back().second){
-
-	  if (IBD_list.size()>0)
-	    if (IBD_list.back().second->get_t0()!=bundle->get_t0() &&
-	  	bundle->get_t0() - IBD_list.back().second->get_t0()<  pid_cuts.get_nn_veto_time()){
-	      std::vector<std::list<std::pair<Bundle*,Bundle*> >::iterator> to_be_removed;
-	      // check IBDs ahead of them ... 
-	      for (auto it=IBD_list.begin(); it!= IBD_list.end(); it++){
-	  	if ( it->second->get_t0()!=bundle->get_t0() &&
-		     bundle->get_t0() - it->second->get_t0() <  pid_cuts.get_nn_veto_time())
-	  	  to_be_removed.push_back(it);
-	      }
-	      if (to_be_removed.size()>0){
-	  	IBD_list.erase(to_be_removed.front(),to_be_removed.back());
-	  	IBD_list.erase(to_be_removed.back());
-	      }
-	    }
 	  
-
+	  // if (IBD_list.size()>0)
+	  //   if (IBD_list.back().second->get_t0()!=bundle->get_t0() &&
+	  // 	bundle->get_t0() - IBD_list.back().second->get_t0()<  pid_cuts.get_nn_veto_time()){
+	  //     std::vector<std::list<std::pair<Bundle*,Bundle*> >::iterator> to_be_removed;
+	  //     // check IBDs ahead of them ... 
+	  //     for (auto it=IBD_list.begin(); it!= IBD_list.end(); it++){
+	  // 	if ( it->second->get_t0()!=bundle->get_t0() &&
+	  // 	     bundle->get_t0() - it->second->get_t0() <  pid_cuts.get_nn_veto_time())
+	  // 	  to_be_removed.push_back(it);
+	  //     }
+	  //     if (to_be_removed.size()>0){
+	  // 	IBD_list.erase(to_be_removed.front(),to_be_removed.back());
+	  // 	IBD_list.erase(to_be_removed.back());
+	  //     }
+	  //   }
 	  // delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
 	  // delay_seg_no = bundle->get_delay_seg_no();
 	  // delay_seg_PSD = bundle->get_delay_seg_PSD();
@@ -340,23 +365,14 @@ int main(int argc, char* argv[])
 	  // T_delay->Fill();
 	  
 	  delay_list.push_back(bundle);
-	  
 	  prev_delay_time = bundle->get_t0();
 	  flag_save_bundle = true;
-
-	  
 	}
       }
       
-      if (bundle->is_showern()&& (!(bundle->is_muon())) && (!bundle->is_delay_cand()))
-	prev_showern_time = bundle->get_t0();
-      
-      if (bundle->is_muon() && (!bundle->is_showern()))
-	prev_muon_time = bundle->get_t0();
-      
-      if (!flag_save_bundle)
-	delete bundle;
-      
+      if (bundle->is_showern()&& (!(bundle->is_muon())) && (!bundle->is_delay_cand())) prev_showern_time = bundle->get_t0();
+      if (bundle->is_muon() && (!bundle->is_showern())) prev_muon_time = bundle->get_t0();
+      if (!flag_save_bundle) delete bundle;
     }
     
     std::cout << "Total time: " << (end_time - start_time)/units::second << " seconds" << std::endl;
@@ -375,7 +391,99 @@ int main(int argc, char* argv[])
     total_time = (end_time - start_time)/units::second;
     total_veto_time = tot_veto_time/units::second;
     T_sum->Fill();
-    
+
+    // remove IBD against dead time ... 
+    {
+      std::vector< std::list<std::pair<Bundle*, Bundle*> >::iterator > to_be_removed;
+      for (auto it = IBD_list.begin(); it!=IBD_list.end(); it++){
+	Bundle *bundle = it->second;
+	for (auto it1 = veto_times.begin(); it1!=veto_times.end(); it1++){
+	  double time1 = it1->first;
+	  double time2 = it1->second;
+	  if (bundle->get_t0() > time1 && bundle->get_t0() < time2){
+	    to_be_removed.push_back(it);
+	  }
+	}
+      }
+      std::cout << "A: " << to_be_removed.size() << std::endl;
+      for (auto it = to_be_removed.begin(); it!=to_be_removed.end(); it++){
+	IBD_list.erase(*it);
+      }
+	
+    }
+
+    // calculate the life time for each accidental ...
+    // check delay list against dead time ...
+    {
+      std::vector< std::list< Bundle* >::iterator > to_be_removed;
+      for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
+	Bundle *bundle = *it;
+	double t1, t2, t3, t4;
+	t1 = bundle->get_t0() - acc_time_range_max;
+	if (t1 < start_time) t1 = start_time;
+	t2 = bundle->get_t0() - acc_time_range_min;
+	if (t2 < start_time) t2 = start_time;
+	t3 = bundle->get_t0() + acc_time_range_min;
+	if (t3>end_time) t3 = end_time;
+	t4 = bundle->get_t0() + acc_time_range_max;
+	if (t4>end_time) t4 = end_time;
+
+	std::vector<std::pair<double,double>> temp_veto_times;
+	
+	for (auto it1 = veto_times.begin(); it1!=veto_times.end(); it1++){
+	  double time1 = it1->first;
+	  double time2 = it1->second;
+
+	  if (bundle->get_t0() > time1 && bundle->get_t0() <= time2)
+	    to_be_removed.push_back(it);
+
+	  if (time1 > t1 && time1 <= t2 || time2 > t1 && time2 <= t2){
+	    temp_veto_times.push_back(std::make_pair(std::max(t1,time1),std::min(t2,time2)));
+	  }
+	  
+	  if (time1 > t3 && time1 <=t4 || time2>t3 && time2 <= t4){
+	    temp_veto_times.push_back(std::make_pair(std::max(t3,time1),std::min(t4,time2)));
+	  }
+	}
+	double temp_acc_total_time = t2-t1 + t4-t3;
+	for (auto it1 = temp_veto_times.begin(); it1!=temp_veto_times.end(); it1++){
+	  temp_acc_total_time -= it1->second - it1->first;
+	}
+	//std::cout << temp_acc_total_time/units::microsecond << std::endl;
+	map_delay_acc_time[bundle] = temp_acc_total_time;
+	
+      }
+      
+      std::cout << "B: " << to_be_removed.size() << std::endl;
+
+      for (auto it = to_be_removed.begin(); it!=to_be_removed.end(); it++){
+	delay_list.erase(*it);
+      }
+    }
+
+    // check IBD against nn events for nn veto ...
+    {
+      std::vector< std::list<std::pair<Bundle*, Bundle*> >::iterator > to_be_removed;
+      for (auto it = IBD_list.begin(); it!=IBD_list.end(); it++){
+	Bundle *bundle = it->second;
+
+	for (auto it1 = delay_list.begin(); it1!=delay_list.end(); it1++){
+	  Bundle *bundle1 = (*it1);
+	  if (fabs(bundle->get_t0() - bundle1->get_t0()) < pid_cuts.get_nn_veto_time() &&
+	      bundle->get_t0() != bundle1->get_t0()){
+	    if (find(to_be_removed.begin(), to_be_removed.end(), it)==to_be_removed.end())
+	      to_be_removed.push_back(it);
+	  }
+	}
+	
+      }
+      std::cout << "C: " << to_be_removed.size() << std::endl;
+      for (auto it = to_be_removed.begin(); it!=to_be_removed.end(); it++){
+	IBD_list.erase(*it);
+      }
+    }
+
+    // remove delay
     
     //    std::cout << showern_count << " " << showern_muon_count << std::endl;
     {
@@ -388,7 +496,6 @@ int main(int argc, char* argv[])
       Bundle *prev_bundle = 0;
       for (auto it = delay_list.begin(); it!=delay_list.end(); it++){
 	Bundle *bundle = *it;
-
 	if (prev_bundle!=0){
 	  if (bundle->get_t0() - prev_bundle->get_t0() < pid_cuts.get_nn_veto_time()){
 	    used_delays.insert(prev_bundle);
@@ -404,55 +511,15 @@ int main(int argc, char* argv[])
 	  to_be_removed.push_back(it);
       }
 
-      // std::cout << to_be_removed.size() << " " << delay_list.size() << std::endl;
+      std::cout << to_be_removed.size() << " " << delay_list.size() << std::endl;
       for (auto it = to_be_removed.begin(); it!=to_be_removed.end(); it++){
 	delay_list.erase(*it);
       }
-      //      std::cout << delay_list.size() << std::endl;
-      
+      std::cout << delay_list.size() << std::endl;
     }
 
+    
     //std::vector<std::pair<double,double>> veto_times;
-    
-    // calculate the life time for each accidental ...  
-    {
-      for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
-	Bundle *bundle = *it;
-	double t1, t2, t3, t4;
-	t1 = bundle->get_t0() - acc_time_range_max;
-	if (t1 < start_time) t1 = start_time;
-	t2 = bundle->get_t0() - acc_time_range_min;
-	if (t2 < start_time) t2 = start_time;
-	t3 = bundle->get_t0() + acc_time_range_min;
-	if (t3>end_time) t3 = end_time;
-	t4 = bundle->get_t0() + acc_time_range_max;
-	if (t4>end_time) t4 = end_time;
-
-	std::vector<std::pair<double,double>> temp_veto_times;
-	
-	for (auto it = veto_times.begin(); it!=veto_times.end(); it++){
-	  double time1 = it->first;
-	  double time2 = it->second;
-
-	  if (time1 > t1 && time1 <= t2 || time2 > t1 && time2 <= t2){
-	    temp_veto_times.push_back(std::make_pair(std::max(t1,time1),std::min(t2,time2)));
-	  }
-	  
-	  if (time1 > t3 && time1 <=t4 || time2>t3 && time2 <= t4){
-	    temp_veto_times.push_back(std::make_pair(std::max(t3,time1),std::min(t4,time2)));
-	  }
-	}
-	double temp_acc_total_time = t2-t1 + t4-t3;
-	for (auto it = temp_veto_times.begin(); it!=temp_veto_times.end(); it++){
-	  temp_acc_total_time -= it->second - it->first;
-	}
-	//std::cout << temp_acc_total_time/units::microsecond << std::endl;
-	map_delay_acc_time[bundle] = temp_acc_total_time;
-	
-      }
-    }
-    
-    
     for (auto it=delay_list.begin(); it!=delay_list.end(); it++){
       Bundle *bundle = *it;
       delay_seg_E = bundle->get_delay_seg_E()/units::MeV;
