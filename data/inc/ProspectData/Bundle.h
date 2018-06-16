@@ -33,7 +33,8 @@ namespace Prospect {
     double get_prompt_maxseg_PSD(){return prompt_maxseg_PSD;};
     double get_prompt_maxseg_Z(){return prompt_maxseg_Z;};
     double get_prompt_total_E(){ return prompt_total_E;};
-
+    double get_prompt_local_E(){ return prompt_local_E;};
+    double get_E_other(){return E_other;};
     
     long long evt;
     float E_total;
@@ -70,6 +71,9 @@ namespace Prospect {
     double prompt_maxseg_PSD;
     double prompt_maxseg_Z;
     double prompt_total_E;
+    double prompt_local_E;
+
+    double E_other;
     
   };
 }

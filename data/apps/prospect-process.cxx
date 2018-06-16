@@ -59,16 +59,16 @@ int main(int argc, char* argv[])
     TTree *T = (TTree*)file->Get("Event");
 
     T->SetBranchAddress("evt",&evt);
-    T->SetBranchAddress("E_total",&E_total);
-    T->SetBranchAddress("wPSD",&wPSD);
+    //  T->SetBranchAddress("E_total",&E_total);
+    // T->SetBranchAddress("wPSD",&wPSD);
     T->SetBranchAddress("t0",&t0);
     T->SetBranchAddress("ts_runstart",&ts_runstart);
-    T->SetBranchAddress("mE",&mE);
-    T->SetBranchAddress("mSeg",&mSeg);
-    T->SetBranchAddress("mX",&mX);
-    T->SetBranchAddress("mY",&mY);
-    T->SetBranchAddress("mZ",&mZ);
-    T->SetBranchAddress("mPSD",&mPSD);
+    //T->SetBranchAddress("mE",&mE);
+    //T->SetBranchAddress("mSeg",&mSeg);
+    //T->SetBranchAddress("mX",&mX);
+    //T->SetBranchAddress("mY",&mY);
+    //T->SetBranchAddress("mZ",&mZ);
+    //T->SetBranchAddress("mPSD",&mPSD);
     T->SetBranchAddress("vSeg",&vSeg);
     T->SetBranchAddress("vE",&vE);
     T->SetBranchAddress("vZ",&vZ);
@@ -137,16 +137,28 @@ int main(int argc, char* argv[])
     TTree *T_IBD = new TTree("T_IBD","T_IBD");
     T_IBD->SetDirectory(file1);
     
+    long long prompt_evt;
+    long long delay_evt;
+    
+    T_IBD->Branch("prompt_evt",&prompt_evt,"prompt_evt/L");
+    T_IBD->Branch("delay_evt",&delay_evt,"delay_evt/L");
+    
     T_IBD->Branch("delay_seg_E",&delay_seg_E,"delay_seg_E/D");
     T_IBD->Branch("delay_seg_no",&delay_seg_no,"delay_seg_no/I");
     T_IBD->Branch("delay_seg_PSD",&delay_seg_PSD,"delay_seg_PSD/D");
     T_IBD->Branch("delay_seg_Z",&delay_seg_Z,"delay_seg_Z/D");
     T_IBD->Branch("delay_total_E",&delay_total_E,"delay_total_E/D");
+    double delay_E_other;
+    T_IBD->Branch("delay_E_other",&delay_E_other,"delay_E_other/D");
     T_IBD->Branch("prompt_maxseg_E",&prompt_maxseg_E,"prompt_maxseg_E/D");
     T_IBD->Branch("prompt_maxseg_no",&prompt_maxseg_no,"prompt_maxseg_no/I");
     T_IBD->Branch("prompt_maxseg_PSD",&prompt_maxseg_PSD,"prompt_maxseg_PSD/D");
     T_IBD->Branch("prompt_maxseg_Z",&prompt_maxseg_Z,"prompt_maxseg_Z/D");
     T_IBD->Branch("prompt_total_E",&prompt_total_E,"prompt_total_E/D");
+    double prompt_local_E;
+    T_IBD->Branch("prompt_local_E",&prompt_local_E,"prompt_local_E/D");
+    double prompt_E_other;
+    T_IBD->Branch("prompt_E_other",&prompt_E_other,"prompt_E_other/D");
     int flag_geometry;
     T_IBD->Branch("flag_geometry",&flag_geometry,"flag_geometry/I");
     double delta_t;
@@ -194,6 +206,8 @@ int main(int argc, char* argv[])
     
     std::list<std::pair<Bundle*, Bundle*>> IBD_list;
     std::set<Bundle*> saved_bundles;
+
+    double_t prev_time = 0;
     
     for (int i=0;i!=T->GetEntries();i++){
       if (i%1000000==0) std::cout << "Events: " << i/1000000 << " M" << std::endl;
@@ -203,10 +217,21 @@ int main(int argc, char* argv[])
       }else if (i==T->GetEntries()-1){
 	end_time = t0*units::ns;
       }
+
+      //  if (t0-prev_time < 0 ) std::cout << i << " " << t0-prev_time << " " << std::endl;
+      
+      prev_time = t0;
+
+      // if (evt >= 377596 && evt <= 377601) std::cout << evt << std::endl;
       
       Bundle *bundle = new Bundle(evt,E_total,wPSD,t0,ts_runstart,mE,mSeg,mX,mY,mZ,mPSD, (*vSeg), (*vE), (*vZ), (*vPSD));
+      //bundle->Print();
       bundle->PID();
 
+      //if (bundle->evt==377600||bundle->evt==377601)
+       // if (bundle->evt==10542324||bundle->evt==10542325)
+       // 	 std::cout << bundle->evt << " " << bundle->is_muon() << " " << bundle->is_showern() << " " << bundle->is_prompt_cand() << " " << bundle->is_delay_cand() << std::endl;
+      
       
       // calculate the veto time ...
       // note veto time contains upstream ... 
@@ -298,12 +323,18 @@ int main(int argc, char* argv[])
       
       // good delay candidate
       if (bundle->is_delay_cand()){
+
+	//	if (bundle->evt == 377601) std::cout << bundle->get_t0() -veto_times.back().second << std::endl;
+	
 	if (bundle->get_t0() > veto_times.back().second){
 	  // remove IBD list from prompt ... 
 	  {
 	    std::vector<std::list<Bundle*>::iterator> to_be_removed;
 	    // loop through prompt list and remove anything outside a window, delete them
 	    for (auto it = prompt_list.begin(); it!=prompt_list.end(); it++){
+
+	      //  if (bundle->evt == 377601) std::cout << (*it)->evt << " " << bundle->get_t0() - (*it)->get_t0() << std::endl;
+	      
 	      if (bundle->get_t0() - (*it)->get_t0() > IBD_delta_t.second){
 		to_be_removed.push_back(it);
 		// delete (*it);
@@ -476,7 +507,20 @@ int main(int argc, char* argv[])
       }
 	
     }
+    
+    // {
+    //   double_t prev_time1=0, prev_time2=0;
+    //   for (auto it1 = veto_times.begin(); it1!=veto_times.end(); it1++){
+    // 	double time1 = it1->first;
+    // 	double time2 = it1->second-IBD_delta_t.second;
 
+    // 	std::cout << time1-prev_time2 << " " << time1 << " " << time2-time1 << std::endl;
+
+    // 	prev_time1 = time1;
+    // 	prev_time2 = time2;
+    //   }
+    // }
+    
     // calculate the life time for each accidental ...
     // check delay list against dead time ...
     {
@@ -494,12 +538,21 @@ int main(int argc, char* argv[])
 	if (t4>end_time) t4 = end_time;
 
 	std::vector<std::pair<double,double>> temp_veto_times;
+
+	int veto_num = 0;
 	
 	for (auto it1 = veto_times.begin(); it1!=veto_times.end(); it1++){
 	  double time1 = it1->first;
 	  double time2 = it1->second-IBD_delta_t.second;
-	  if (bundle->get_t0() > time1 && bundle->get_t0() <= time2)
-	    to_be_removed.push_back(it);
+	  if (bundle->get_t0() > time1 && bundle->get_t0() <= time2){
+	    if (find(to_be_removed.begin(), to_be_removed.end(), it) == to_be_removed.end()){
+	      //std::cout << bundle->get_t0() << " " << time1-1.57588e+12 << " " << time2 - 1.57588e+12 << " " << time2-time1 << " " << veto_num << std::endl;
+	      to_be_removed.push_back(it);
+	    } else{
+	      //std::cout << bundle->get_t0() << " " << time1-1.57588e+12 << " " << time2 - 1.57588e+12 << " " << time2-time1 << " " << veto_num << std::endl;
+	    }
+	  }
+	  veto_num ++;
 	  if (time1 > t1 && time1 <= t2 || time2 > t1 && time2 <= t2){
 	    temp_veto_times.push_back(std::make_pair(std::max(t1,time1),std::min(t2,time2)));
 	  }
@@ -648,21 +701,28 @@ int main(int argc, char* argv[])
     for (auto it = IBD_list.begin(); it!=IBD_list.end(); it++){
       Bundle* bundle1 = it->first;
       Bundle* bundle2 = it->second;
+
+      prompt_evt = bundle1->evt;
+      delay_evt = bundle2->evt;
       
       prompt_maxseg_E = bundle1->get_prompt_maxseg_E()/units::MeV;
       prompt_maxseg_no = bundle1->get_prompt_maxseg_no();
       prompt_maxseg_PSD = bundle1->get_prompt_maxseg_PSD();
       prompt_maxseg_Z = bundle1->get_prompt_maxseg_Z()/units::cm;
       prompt_total_E = bundle1->get_prompt_total_E()/units::MeV;
+      prompt_local_E = bundle1->get_prompt_local_E()/units::MeV;
+      prompt_E_other = bundle1->get_E_other()/units::MeV;
       
       delay_seg_E = bundle2->get_delay_seg_E()/units::MeV;
       delay_seg_no = bundle2->get_delay_seg_no();
       delay_seg_PSD = bundle2->get_delay_seg_PSD();
       delay_seg_Z = bundle2->get_delay_seg_Z()/units::cm;
       delay_total_E = bundle2->get_delay_total_E()/units::MeV;
+      delay_E_other = bundle2->get_E_other()/units::MeV;
       
       flag_geometry = geometry.RowColDiff(bundle1->get_prompt_maxseg_no(), bundle2->get_delay_seg_no());
       delta_t = bundle2->get_t0() - bundle1->get_t0();
+      
       T_IBD->Fill();
     }
     
